@@ -1,0 +1,16 @@
+{
+  "name": "Fall of the Foul",
+  "short_name": "Fall of the Foul",
+  "description": "A dark-fantasy arena ARPG. Slay the foul, gather souls, grow stronger.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0a08",
+  "theme_color": "#0b0a08",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
