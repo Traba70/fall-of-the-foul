@@ -1,5 +1,5 @@
 /* Fall of the Foul — offline app shell cache */
-var CACHE = "fotf-v2";
+var CACHE = "fotf-v3";
 var ASSETS = [
   ".",
   "index.html",
@@ -11,7 +11,8 @@ var ASSETS = [
   "js/arena.js",
   "js/main.js",
   "icons/icon-192.png",
-  "icons/icon-512.png"
+  "icons/icon-512.png",
+  "icons/icon-32.png"
 ];
 
 self.addEventListener("install", function (e) {
