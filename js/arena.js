@@ -177,8 +177,8 @@
     var a = aimAngle(p); p.facing = a; p.swingT = 1; p.atkCd = atk.rate; p.stam -= atk.stam;
     var d = p.d, fl = d.flags;
     if (atk.type === "melee") { meleeHit(p.x, p.y, a, atk.arc, atk.range, atk.dmg, { crit: d.critChance, lifesteal: fl.lifesteal, burn: fl.burn, slow: fl.slow }); slashFX(p, a, atk.range, atk.arc, atk.color); }
-    else if (atk.type === "ranged") { fireProj(p.x, p.y, a, atk.projSpeed, atk.dmg, { color: atk.color, crit: d.critChance }); }
-    else { var mc = atk.manaCost || 0, mdmg = atk.dmg; if (p.mana < mc) mdmg *= 0.4; else p.mana -= mc; fireProj(p.x, p.y, a, atk.projSpeed, mdmg, { color: atk.color, crit: d.critChance, burn: fl.burn, slow: fl.slow, r: 8, glow: true }); }
+    else if (atk.type === "ranged") { fireProj(p.x, p.y, a, atk.projSpeed, atk.dmg, { color: atk.color, crit: d.critChance, vis: "arrow", r: 5 }); }
+    else { var mc = atk.manaCost || 0, mdmg = atk.dmg; if (p.mana < mc) mdmg *= 0.4; else p.mana -= mc; fireProj(p.x, p.y, a, atk.projSpeed, mdmg, { color: atk.color, crit: d.critChance, burn: fl.burn, slow: fl.slow, r: 8, glow: true, vis: "magic" }); }
   }
 
   function doSkill() {
@@ -210,9 +210,9 @@
     else if (a.kind === "spin") { A.effects.push({ kind: "spin", x: p.x, y: p.y, r: a.radius, t: 0, dur: 0.55, ticks: a.ticks, tickT: 0, dmg: base * mult, done: 0, follow: p }); }
     else if (a.kind === "dash") { p.dashT = 0.22; p.dvx = Math.cos(aim) * 1400; p.dvy = Math.sin(aim) * 1400; p.iframe = Math.max(p.iframe, 0.3); A.effects.push({ kind: "dashHit", x: p.x, y: p.y, dmg: base * mult, hitSet: {}, lifesteal: a.lifesteal, follow: p, t: 0, dur: 0.22 }); }
     else if (a.kind === "blink") { var t2 = nearest(p.x, p.y, 600); if (t2) { var an = ang(t2.x - p.x, t2.y - p.y); p.x = clamp(t2.x - Math.cos(an) * (t2.r + 24), WORLD.margin, WORLD.w - WORLD.margin); p.y = clamp(t2.y - Math.sin(an) * (t2.r + 24), WORLD.margin, WORLD.h - WORLD.margin); } else { p.x = clamp(p.x + Math.cos(aim) * a.dist, WORLD.margin, WORLD.w - WORLD.margin); p.y = clamp(p.y + Math.sin(aim) * a.dist, WORLD.margin, WORLD.h - WORLD.margin); } p.iframe = Math.max(p.iframe, a.iframe || 0.4); p.swingT = 1; meleeHit(p.x, p.y, aim, 2.2, 130, base * mult, { crit: d.critChance }); slashFX(p, aim, 130, 2.2, "#e7cf95"); }
-    else if (a.kind === "pierce") { fireProj(p.x, p.y, aim, a.speed, base * mult, { color: a.color || "#ffe08a", pierce: a.pierce, r: 7, glow: true, crit: d.critChance, burn: a.burn, slow: a.slow }); }
-    else if (a.kind === "fan") { for (var i = 0; i < a.count; i++) { var off = (i - (a.count - 1) / 2) * a.spread; fireProj(p.x, p.y, aim + off, a.speed || 700, base * mult, { color: a.color || (a.slow ? "#7fc7e6" : (isSpell ? "#e6883a" : p.atk.color)), slow: a.slow, burn: a.burn || fl.burn, r: 6, glow: isSpell || !!a.slow, crit: d.critChance }); } }
-    else if (a.kind === "boom") { fireProj(p.x, p.y, aim, a.speed, base * mult, { color: a.burn ? "#ff8a3a" : "#ffd08a", r: 10, glow: true, boom: a.radius, burn: a.burn, crit: d.critChance }); }
+    else if (a.kind === "pierce") { fireProj(p.x, p.y, aim, a.speed, base * mult, { color: a.color || "#ffe08a", pierce: a.pierce, r: 7, glow: true, crit: d.critChance, burn: a.burn, slow: a.slow, vis: isSpell ? "bolt" : "arrow" }); }
+    else if (a.kind === "fan") { for (var i = 0; i < a.count; i++) { var off = (i - (a.count - 1) / 2) * a.spread; fireProj(p.x, p.y, aim + off, a.speed || 700, base * mult, { color: a.color || (a.slow ? "#7fc7e6" : (isSpell ? "#e6883a" : p.atk.color)), slow: a.slow, burn: a.burn || fl.burn, r: 6, glow: isSpell || !!a.slow, crit: d.critChance, vis: isSpell ? (a.slow ? "ice" : "magic") : "arrow" }); } }
+    else if (a.kind === "boom") { fireProj(p.x, p.y, aim, a.speed, base * mult, { color: a.burn ? "#ff8a3a" : "#ffd08a", r: 10, glow: true, boom: a.radius, burn: a.burn, crit: d.critChance, vis: isSpell ? "fire" : "orb" }); }
     else if (a.kind === "nova") { addHazard({ x: p.x, y: p.y, r: a.radius, warn: 0, dur: 0.25, dmg: base * mult, owner: "player", tickRate: 0.25, burn: a.burn, color: "#ff8a3a", kind: "burst" }); }
     else if (a.kind === "rain") { var tg = nearest(p.x, p.y, 700), tx = tg ? tg.x : p.x + Math.cos(aim) * 180, ty = tg ? tg.y : p.y + Math.sin(aim) * 180; addHazard({ x: tx, y: ty, r: a.radius, warn: 0.7, dur: 0.5, dmg: base * mult, owner: "player", tickRate: 0.25, color: a.burn ? "#ff8a3a" : "#d9c37a", kind: "rain", count: a.count, burn: a.burn }); }
     else if (a.kind === "field") { var fg = nearest(p.x, p.y, 700), fx = fg ? fg.x : p.x + Math.cos(aim) * 160, fy = fg ? fg.y : p.y + Math.sin(aim) * 160; addHazard({ x: fx, y: fy, r: a.radius, warn: 0.3, dur: a.dur, dmg: base * mult, owner: "player", tickRate: 0.5, slow: a.slow, color: "#7fc7e6", kind: "field" }); }
@@ -245,7 +245,7 @@
     o = o || {};
     A.pProj.push({ x: x, y: y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, r: o.r || 5, dmg: dmg,
       pierce: o.pierce || 0, life: 1.8, color: o.color || "#e7cf95", glow: !!o.glow, boom: o.boom || 0,
-      burn: !!o.burn, slow: !!o.slow, crit: o.crit || 0, hitSet: {} });
+      burn: !!o.burn, slow: !!o.slow, crit: o.crit || 0, vis: o.vis || (o.glow ? "magic" : "orb"), hitSet: {} });
   }
   function hurtEnemy(e, dmg, crit, o) {
     e.hp -= dmg; e.hitT = 0.12;
@@ -317,7 +317,7 @@
     }
   }
   function moveTowards(e, tx, ty, spd, dt) { var a = ang(tx - e.x, ty - e.y); e.x = clamp(e.x + Math.cos(a) * spd * dt, WORLD.margin, WORLD.w - WORLD.margin); e.y = clamp(e.y + Math.sin(a) * spd * dt, WORLD.margin, WORLD.h - WORLD.margin); e.walkPhase += dt * 8; }
-  function enemyShoot(e, p) { var a = ang(p.x - e.x, p.y - e.y); A.eProj.push({ x: e.x, y: e.y, vx: Math.cos(a) * e.projSpeed, vy: Math.sin(a) * e.projSpeed, r: 7, dmg: e.dmg, life: 3, color: e.role === "mage" ? "#c07add" : "#d0c090", home: e.role === "mage" ? 0.8 : 0 }); }
+  function enemyShoot(e, p) { var a = ang(p.x - e.x, p.y - e.y); A.eProj.push({ x: e.x, y: e.y, vx: Math.cos(a) * e.projSpeed, vy: Math.sin(a) * e.projSpeed, r: 7, dmg: e.dmg, life: 3, color: e.role === "mage" ? "#c07add" : "#d0c090", home: e.role === "mage" ? 0.8 : 0, vis: e.role === "mage" ? "magic" : "arrow" }); }
 
   function updateProjectiles(dt) {
     var p = A.player, i, pr;
@@ -398,12 +398,12 @@
     else if (k === "dashslash") { var a2 = ang(p.x - b.x, p.y - b.y); b.dashT = 0.3; b.dvx = Math.cos(a2) * 1400; b.dvy = Math.sin(a2) * 1400; cd = 1.4; }
     else if (k === "flurry") { addHazard({ x: b.x, y: b.y, r: b.r + 120, warn: 0, dur: 0.6, dmg: b.dmg * 0.5, owner: "enemy", tickRate: 0.18, color: "#c9b06a", kind: "burst" }); cd = 1.8; }
     else if (k === "rot") { for (i = 0; i < 4; i++) addHazard({ x: clamp(p.x + rnd(-140, 140), WORLD.margin, WORLD.w - WORLD.margin), y: clamp(p.y + rnd(-140, 140), WORLD.margin, WORLD.h - WORLD.margin), r: 70, warn: 0.5, dur: 3.5, dmg: b.dmg * 0.25, owner: "enemy", tickRate: 0.5, slow: true, color: "#8fbf4a", kind: "field" }); cd = 2.4; }
-    else if (k === "orbs") { for (i = 0; i < 6; i++) { var aa = ang(p.x - b.x, p.y - b.y) + (i - 2.5) * 0.16; A.eProj.push({ x: b.x, y: b.y, vx: Math.cos(aa) * 300, vy: Math.sin(aa) * 300, r: 8, dmg: b.dmg * 0.6, life: 4, color: "#c9c0f5", home: 0.5 }); } cd = 1.8; }
+    else if (k === "orbs") { for (i = 0; i < 6; i++) { var aa = ang(p.x - b.x, p.y - b.y) + (i - 2.5) * 0.16; A.eProj.push({ x: b.x, y: b.y, vx: Math.cos(aa) * 300, vy: Math.sin(aa) * 300, r: 8, dmg: b.dmg * 0.6, life: 4, color: "#c9c0f5", home: 0.5, vis: "magic" }); } cd = 1.8; }
     else if (k === "meteor") { for (i = 0; i < 5; i++) addHazard({ x: clamp(p.x + rnd(-200, 200), WORLD.margin, WORLD.w - WORLD.margin), y: clamp(p.y + rnd(-200, 200), WORLD.margin, WORLD.h - WORLD.margin), r: 80, warn: 0.9, dur: 0.3, dmg: b.dmg * 0.8, owner: "enemy", tickRate: 0.3, color: "#8a7fd6", kind: "meteor" }); cd = 2.2; }
     else if (k === "beam") { var ba = ang(p.x - b.x, p.y - b.y); for (i = 1; i <= 6; i++) addHazard({ x: b.x + Math.cos(ba) * i * 90, y: b.y + Math.sin(ba) * i * 90, r: 55, warn: 0.5, dur: 0.25, dmg: b.dmg * 0.7, owner: "enemy", tickRate: 0.25, color: "#b3a6ff", kind: "burst" }); cd = 2.0; }
     else if (k === "boulder") { addHazard({ x: p.x, y: p.y, r: 90, warn: 0.9, dur: 0.3, dmg: b.dmg, owner: "enemy", tickRate: 0.3, color: "#8a6f52", kind: "meteor" }); cd = 2.0; }
     else if (k === "grab") { var ga = ang(p.x - b.x, p.y - b.y); b.dashT = 0.35; b.dvx = Math.cos(ga) * 1300; b.dvy = Math.sin(ga) * 1300; cd = 2.2; }
-    else if (k === "spears") { for (i = 0; i < 7; i++) { var sa = ang(p.x - b.x, p.y - b.y) + (i - 3) * 0.14; A.eProj.push({ x: b.x, y: b.y, vx: Math.cos(sa) * 520, vy: Math.sin(sa) * 520, r: 6, dmg: b.dmg * 0.5, life: 3, color: "#e05a6a" }); } cd = 1.6; }
+    else if (k === "spears") { for (i = 0; i < 7; i++) { var sa = ang(p.x - b.x, p.y - b.y) + (i - 3) * 0.14; A.eProj.push({ x: b.x, y: b.y, vx: Math.cos(sa) * 520, vy: Math.sin(sa) * 520, r: 6, dmg: b.dmg * 0.5, life: 3, color: "#e05a6a", vis: "arrow" }); } cd = 1.6; }
     else if (k === "novaB") { addHazard({ x: b.x, y: b.y, r: 220, warn: 0.7, dur: 0.3, dmg: b.dmg, owner: "enemy", tickRate: 0.3, color: "#a03040", kind: "ring" }); cd = 2.0; }
     else if (k === "teleport") { var t2a = ang(p.x - b.x, p.y - b.y); b.x = clamp(p.x - Math.cos(t2a) * 60, WORLD.margin, WORLD.w - WORLD.margin); b.y = clamp(p.y - Math.sin(t2a) * 60, WORLD.margin, WORLD.h - WORLD.margin); b.windT = 0.35; b.attackKind = "sweep2"; return; }
     else if (k === "sweep2") { meleeBoss(b, p, 2.4, b.r + 130, b.dmg); cd = 1.4; }
@@ -551,10 +551,10 @@
       if (h.t < h.warn) { var f = h.t / h.warn; ctx.strokeStyle = h.owner === "enemy" ? "rgba(200,60,50," + (0.4 + 0.4 * f) + ")" : "rgba(230,207,149,.6)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(h.x, h.y, h.r * (0.5 + 0.5 * f), 0, TAU); ctx.stroke(); ctx.fillStyle = h.owner === "enemy" ? "rgba(200,60,50,.10)" : "rgba(230,207,149,.10)"; ctx.beginPath(); ctx.arc(h.x, h.y, h.r * (0.5 + 0.5 * f), 0, TAU); ctx.fill(); }
       else { var a = 1 - (h.t - h.warn) / h.dur; ctx.fillStyle = h.color || "#c98a3a"; ctx.globalAlpha = 0.3 * a + (h.kind === "field" ? 0.15 : 0); ctx.beginPath(); ctx.arc(h.x, h.y, h.r, 0, TAU); ctx.fill(); ctx.globalAlpha = a; ctx.strokeStyle = h.color || "#c98a3a"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(h.x, h.y, h.r, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1; } }
   }
-  function drawProjectiles() { var i, pr; for (i = 0; i < A.pProj.length; i++) { pr = A.pProj[i]; if (pr.glow) { ctx.shadowColor = pr.color; ctx.shadowBlur = 12; } ctx.fillStyle = pr.color; ctx.beginPath(); ctx.arc(pr.x, pr.y, pr.r, 0, TAU); ctx.fill(); ctx.shadowBlur = 0; } for (i = 0; i < A.eProj.length; i++) { pr = A.eProj[i]; ctx.shadowColor = pr.color; ctx.shadowBlur = 8; ctx.fillStyle = pr.color; ctx.beginPath(); ctx.arc(pr.x, pr.y, pr.r, 0, TAU); ctx.fill(); ctx.shadowBlur = 0; } }
+  function drawProjectiles() { var i; for (i = 0; i < A.pProj.length; i++) G.drawProj(ctx, A.pProj[i]); for (i = 0; i < A.eProj.length; i++) G.drawProj(ctx, A.eProj[i]); }
   function drawEffects() {
     for (var i = 0; i < A.effects.length; i++) { var ef = A.effects[i];
-      if (ef.kind === "slash") { var f = ef.t / ef.dur; ctx.strokeStyle = ef.color; ctx.globalAlpha = (1 - f) * 0.9; ctx.lineWidth = 6; ctx.lineCap = "round"; ctx.beginPath(); ctx.arc(ef.x, ef.y, ef.range * 0.8, ef.a - ef.arc / 2, ef.a + ef.arc / 2); ctx.stroke(); ctx.globalAlpha = 1; ctx.lineCap = "butt"; }
+      if (ef.kind === "slash") { G.drawSlash(ctx, ef); }
       else if (ef.kind === "spin") { ctx.strokeStyle = "rgba(231,207,149," + (0.7 * (1 - ef.t / ef.dur)) + ")"; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(ef.x, ef.y, ef.r * (0.6 + 0.4 * (ef.t / ef.dur)), 0, TAU); ctx.stroke(); } }
   }
   function drawParticles() { for (var i = 0; i < A.particles.length; i++) { var pt = A.particles[i], a = clamp(pt.life / pt.max, 0, 1); if (pt.text) { ctx.globalAlpha = a; ctx.fillStyle = pt.color; ctx.font = "bold " + pt.size + "px Georgia,serif"; ctx.textAlign = "center"; ctx.fillText(pt.text, pt.x, pt.y); ctx.globalAlpha = 1; ctx.textAlign = "left"; } else { ctx.globalAlpha = a; ctx.fillStyle = pt.color; ctx.fillRect(pt.x - pt.size / 2, pt.y - pt.size / 2, pt.size, pt.size); ctx.globalAlpha = 1; } } }
