@@ -191,7 +191,7 @@
         '<div class="inv-item" data-skillslot="' + uid + '"><div class="icn rune">' + (cur ? "⚔" : "+") + '</div>' +
         '<div class="grow"><div class="nm">' + (cur ? cur.name : "— No skill —") + '</div><div class="sub">' + (cur ? abilityMeta(cur) : "Tap to slot a " + def.type + " skill") + '</div></div><div class="chev">›</div></div>';
     } else if (def.type === "magic") {
-      html += '<div class="buffline" style="margin-top:10px">Magic weapons channel <b>spells</b> (set under Equipment), not weapon skills.</div>';
+      html += '<div class="buffline" style="margin-top:10px">Basic attacks cost <b>' + (def.manaCost || 0) + ' mana</b>. Magic weapons channel <b>spells</b> (set under Equipment), not weapon skills.</div>';
     }
 
     // action buttons

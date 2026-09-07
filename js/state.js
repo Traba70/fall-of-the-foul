@@ -64,7 +64,23 @@
     G.save();
   };
   G.unequip = function (slot) { G.state.eq[slot] = null; clampSpells(); G.save(); };
-  G.setClass = function (cls) { if (G.CLASSES.indexOf(cls) >= 0) { G.state.cls = cls; G.save(); } };
+
+  function copyEq(eq) { var o = {}; for (var i = 0; i < EQ_SLOTS.length; i++) o[EQ_SLOTS[i]] = (eq && eq[EQ_SLOTS[i]]) || null; return o; }
+  // Each class remembers its own loadout (equipment + spell slots). Switching class
+  // snapshots the current setup and restores the target class's saved one (if any).
+  G.setClass = function (cls) {
+    if (G.CLASSES.indexOf(cls) < 0 || cls === G.state.cls) return;
+    if (!G.state.setups) G.state.setups = {};
+    G.state.setups[G.state.cls] = { eq: copyEq(G.state.eq), spells: (G.state.spells || []).slice() };
+    G.state.cls = cls;
+    var saved = G.state.setups[cls];
+    if (saved) {
+      var neweq = {};
+      for (var i = 0; i < EQ_SLOTS.length; i++) { var u = saved.eq ? saved.eq[EQ_SLOTS[i]] : null; neweq[EQ_SLOTS[i]] = (u && G.findInst(u)) ? u : null; }
+      G.state.eq = neweq; G.state.spells = (saved.spells || []).slice(); clampSpells();
+    }
+    G.save();
+  };
 
   // ---- weapon skill slot --------------------------------------
   G.weaponSkills = function (inst) {
@@ -183,8 +199,8 @@
     return {
       dmg: dmg, type: type, range: def.range, arc: def.arc || 1.4,
       rate: (def.rate || 0.5) / d.atkSpeedMult, projSpeed: def.projSpeed || 0,
-      stam: G.STAM_ATTACK[type] || 8, classMatch: classMatch, inst: inst, def: def,
-      name: def.name, color: def.color
+      stam: G.STAM_ATTACK[type] || 8, manaCost: def.manaCost || 0,
+      classMatch: classMatch, inst: inst, def: def, name: def.name, color: def.color
     };
   };
 
@@ -244,6 +260,7 @@
       } else { delete inst.skillSlot; }
       delete inst.activeSkill;
     }
+    if (!s.setups) s.setups = {};
     if (!s.spells) s.spells = [];
     // auto-slot learned spells into empty default slots on first migration
     if (s.spells.length === 0 && s.learnedSpells.length) {
@@ -269,7 +286,7 @@
       souls: 120, level: 1, statsBought: 0, stage: 1, stageCleared: 0,
       inv: [],
       eq: { right:null, left:null, ring:null, talisman1:null, talisman2:null, helmet:null, chest:null, legs:null },
-      learnedSkills: [], learnedSpells: [], spells: []
+      learnedSkills: [], learnedSpells: [], spells: [], setups: {}
     };
     // starting known abilities
     G.learn("guard_slash"); G.learn("piercing_shot"); G.learn("fireball");

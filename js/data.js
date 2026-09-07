@@ -68,11 +68,11 @@
 
     // ---- Magic weapons (NO skill slot; basic attack is a bolt; spells are separate)
     wand_ember: { id:"wand_ember", name:"Emberwand", slot:"weapon", type:"magic",
-      dmg:26, range:560, rate:0.70, projSpeed:560, color:"#e6883a",
+      dmg:26, range:560, rate:0.70, projSpeed:560, manaCost:8, color:"#e6883a",
       stats:{magic:3,mana:2}, buff:{type:"burn",val:0.35,desc:"Attacks set enemies aflame"},
       desc:"Kindled with everburning coals." },
     wand_frost: { id:"wand_frost", name:"Frostwand", slot:"weapon", type:"magic",
-      dmg:22, range:560, rate:0.62, projSpeed:600, color:"#7fc7e6",
+      dmg:22, range:560, rate:0.62, projSpeed:600, manaCost:7, color:"#7fc7e6",
       stats:{magic:2,mana:3}, buff:{type:"slow",val:0.35,desc:"Attacks chill and slow enemies"},
       desc:"Whispers of the frozen north." },
 

@@ -178,7 +178,7 @@
     var d = p.d, fl = d.flags;
     if (atk.type === "melee") { meleeHit(p.x, p.y, a, atk.arc, atk.range, atk.dmg, { crit: d.critChance, lifesteal: fl.lifesteal, burn: fl.burn, slow: fl.slow }); slashFX(p, a, atk.range, atk.arc, atk.color); }
     else if (atk.type === "ranged") { fireProj(p.x, p.y, a, atk.projSpeed, atk.dmg, { color: atk.color, crit: d.critChance }); }
-    else { fireProj(p.x, p.y, a, atk.projSpeed, atk.dmg, { color: atk.color, crit: d.critChance, burn: fl.burn, slow: fl.slow, r: 8, glow: true }); }
+    else { var mc = atk.manaCost || 0, mdmg = atk.dmg; if (p.mana < mc) mdmg *= 0.4; else p.mana -= mc; fireProj(p.x, p.y, a, atk.projSpeed, mdmg, { color: atk.color, crit: d.critChance, burn: fl.burn, slow: fl.slow, r: 8, glow: true }); }
   }
 
   function doSkill() {
