@@ -206,6 +206,49 @@
   .foot-actions{display:flex; gap:10px; padding:0 14px 12px;}
   .foot-actions .btn{flex:1;}
 
+  /* ---------- spell cast buttons (battle, left side) ---------- */
+  .spellpad{position:absolute; left:12px; bottom:2px; display:flex; flex-direction:column-reverse; gap:10px; pointer-events:none;}
+  .act.spell-cast{position:relative; width:58px; height:58px; border-color:#4a3a6a; color:#d7c4ef; background:radial-gradient(60% 60% at 50% 40%,#241a36,#150f22); font-size:10px; pointer-events:auto; padding:0;}
+  .act.spell-cast .lbl{padding:0 4px; line-height:1.05; text-align:center;}
+
+  /* ---------- rune/ability icon & list chevrons ---------- */
+  .icn.rune{display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--gold); background:#0d0b09;}
+  .slot .icn.rune{width:40px; height:40px;}
+  .chev{margin-left:auto; color:var(--ink-dim); font-size:20px; padding-right:2px;}
+  .inv-item{cursor:pointer;}
+
+  /* ---------- gear item-detail / picker modal ---------- */
+  .menu-overlay{align-items:center; z-index:50;}
+  .modal-panel{width:100%; max-width:460px; max-height:88%; margin:0 14px; display:flex; flex-direction:column;
+    background:linear-gradient(180deg,var(--panel),var(--bg2)); border:1px solid var(--gold); border-radius:12px;
+    box-shadow:var(--shadow); overflow-y:auto; -webkit-overflow-scrolling:touch; text-align:left;}
+  .modal-head{position:sticky; top:0; display:flex; align-items:center; justify-content:space-between; padding:12px 14px;
+    border-bottom:1px solid var(--edge); background:var(--panel); z-index:2;}
+  .modal-head .h{font-size:16px; letter-spacing:.06em; color:var(--gold-bright); text-transform:uppercase;}
+  .modal-head .btn{padding:6px 11px; font-size:14px;}
+  .modal-scroll{padding:8px 12px;}
+  .detail-top{display:flex; gap:12px; align-items:center; padding:12px 14px 4px;}
+  .icn-lg{width:64px; height:64px; flex:none; border-radius:10px; border:1px solid var(--edge); background-size:cover;}
+  .detail-info .dt-type{font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-dim);}
+  .detail-info .dt-lv{font-size:15px; color:var(--gold-bright);}
+  .dt-desc{padding:6px 14px; font-size:12.5px; color:var(--ink-dim); font-style:italic;}
+  .modal-panel .statgrid{padding:0 14px;}
+  .modal-panel .buffline, .modal-panel .card-title{padding-left:14px; padding-right:14px;}
+  .modal-panel .inv-item{margin:6px 14px;}
+  .detail-actions{display:flex; gap:8px; flex-wrap:wrap; padding:12px 14px 16px;}
+  .detail-actions .btn{flex:1; min-width:130px;}
+
+  /* ---------- landscape: let the arena fill, keep menus readable ---------- */
+  @media (orientation:landscape){
+    #app{max-width:none;}
+    #s-home .topbar, #s-home .navbar, #s-home .hero-stage,
+    #s-gear .panel-head, #s-gear .scroll, #s-levelup .panel-head, #s-levelup .scroll{
+      max-width:640px; margin-left:auto; margin-right:auto; width:100%;
+    }
+    #portrait{width:min(34vh,240px); height:min(34vh,240px);}
+    .controls{height:150px;}
+  }
+
   /* webfont polish (Cinzel display + EB Garamond body); falls back to system serif offline */
   body,.gothic{font-family:"EB Garamond","Palatino Linotype",Georgia,serif;}
   .title,.subtitle,.cleared,.died,.panel-head .h,.card-title,.wave-lbl,.class-tag,.reward-name,.nav-btn .lbl{font-family:"Cinzel","Palatino Linotype",Georgia,serif;}
@@ -285,6 +328,7 @@
     <button id="pause-btn">II</button>
     <div class="controls">
       <div id="joy-zone"></div>
+      <div class="spellpad" id="spellpad"></div>
       <div class="actionpad">
         <button class="act skill" id="btn-skill"><span id="skill-name">Skill</span><svg class="cdring" viewBox="0 0 100 100"><circle id="cd-skill" cx="50" cy="50" r="48" fill="none" stroke="#a9c6ea" stroke-width="3" stroke-dasharray="301.6" stroke-dashoffset="0" transform="rotate(-90 50 50)"/></svg></button>
         <button class="act dodge" id="btn-dodge">Dodge<svg class="cdring" viewBox="0 0 100 100"><circle id="cd-dodge" cx="50" cy="50" r="48" fill="none" stroke="#b6d99a" stroke-width="3" stroke-dasharray="301.6" stroke-dashoffset="0" transform="rotate(-90 50 50)"/></svg></button>
@@ -314,6 +358,7 @@
     </div>
   </div>
 
+  <div class="overlay menu-overlay" id="menu-modal"></div>
   <div id="toast"></div>
 </div>
 

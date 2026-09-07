@@ -364,6 +364,12 @@
     } else if (def.type === "ring") {
       ctx.strokeStyle = "#c8a862"; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, 3, 9, 0, TAU); ctx.stroke();
       ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = 8; ctx.beginPath(); ctx.arc(0, -8, 5, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
+    } else if (def.type === "talisman") {
+      ctx.strokeStyle = "#c8a862"; ctx.lineWidth = 2.5; // chain
+      ctx.beginPath(); ctx.moveTo(-11, -14); ctx.quadraticCurveTo(0, -3, 11, -14); ctx.stroke();
+      ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = 10; // gem
+      ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(9, 6); ctx.lineTo(0, 17); ctx.lineTo(-9, 6); ctx.closePath(); ctx.fill(); ctx.shadowBlur = 0;
+      ctx.strokeStyle = "#e7cf95"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(0, 17); ctx.stroke();
     } else if (def.slot === "helmet") {
       ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0, -2, 12, Math.PI, TAU); ctx.lineTo(11, 10); ctx.quadraticCurveTo(0, 16, -11, 10); ctx.closePath(); ctx.fill();
       ctx.strokeStyle = "#100c08"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-7, 2); ctx.lineTo(7, 2); ctx.stroke();
