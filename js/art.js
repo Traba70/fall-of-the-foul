@@ -124,8 +124,9 @@
     // ---- spiked pauldrons ----
     drawPauldron(ctx, -46, -40, steel, gold, -1);
     drawPauldron(ctx, 46, -40, steel, gold, 1);
-    // ---- offhand shield ----
+    // ---- offhand: shield, or a wand if one is held in the left hand ----
     if (C.offtype === "shield") drawHeaterShield(ctx, -66, 44, C.off);
+    else if (C.offtype === "magic") drawOffhandWand(ctx, -58, 44, C.off);
     // ---- horned great helm ----
     ctx.save(); ctx.translate(0, -70);
     ctx.fillStyle = darken(gold, .35);
@@ -162,6 +163,17 @@
     ctx.strokeStyle = toRGBA("#c8a862", .85); ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, -32); ctx.lineTo(0, 40); ctx.moveTo(-20, -6); ctx.lineTo(20, -6); ctx.stroke();
     ctx.fillStyle = "#8a1c1c"; ctx.beginPath(); ctx.arc(0, -6, 5, 0, TAU); ctx.fill();
     ctx.strokeStyle = "rgba(255,255,255,.25)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-16, -32); ctx.quadraticCurveTo(-22, 0, -12, 30); ctx.stroke();
+    ctx.restore();
+  }
+  // short wand held in the off-hand (shown when a wand sits in the left slot)
+  function drawOffhandWand(ctx, x, y, col) {
+    col = col || "#e6883a";
+    ctx.save(); ctx.translate(x, y); ctx.rotate(-0.32);
+    ctx.strokeStyle = "#3a2a1a"; ctx.lineWidth = 5; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(2, 18); ctx.lineTo(-4, -30); ctx.stroke();
+    ctx.strokeStyle = "#5a4530"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(2, 18); ctx.lineTo(-4, -30); ctx.stroke();
+    var g = ctx.createRadialGradient(-5, -34, 1, -5, -34, 15); g.addColorStop(0, "#fff"); g.addColorStop(.35, lighten(col, .3)); g.addColorStop(1, toRGBA(col, 0));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(-5, -34, 15, 0, TAU); ctx.fill();
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(-5, -34, 4.5, 0, TAU); ctx.fill();
     ctx.restore();
   }
   function drawSwordPortrait(ctx, x, y, col, wtype) {
@@ -249,6 +261,8 @@
     capsule(ctx, 34, -22, 48, 32, 10, clothGrad(ctx, 38, -22, 58, 32, leather));
     ctx.fillStyle = "#2a1c10"; roundRect(ctx, -54, 20, 15, 18, 3); ctx.fill(); roundRect(ctx, 39, 20, 15, 18, 3); ctx.fill();
     ctx.strokeStyle = toRGBA(gold, .4); ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-52, 26); ctx.lineTo(-41, 26); ctx.moveTo(41, 26); ctx.lineTo(52, 26); ctx.stroke();
+    // off-hand wand (if one is held in the left hand)
+    if (C.offtype === "magic") drawOffhandWand(ctx, -52, 40, C.off);
     // ---- deep hood ----
     ctx.save(); ctx.translate(0, -62);
     ctx.fillStyle = clothGrad(ctx, -30, -38, 30, 26, cloak); ctx.strokeStyle = darken(cloak, .6); ctx.lineWidth = 2;

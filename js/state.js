@@ -104,6 +104,11 @@
     for (var i = 0; i < eqs.length; i++) { var def = ITEMS[eqs[i].id]; if (def.spellSlots) n += def.spellSlots; }
     return n;
   };
+  // Spells can only be channelled through a wand held in a hand (right or left).
+  G.canCastSpells = function () {
+    var r = G.getEquipped("right"), l = G.getEquipped("left");
+    return !!((r && ITEMS[r.id].type === "magic") || (l && ITEMS[l.id].type === "magic"));
+  };
   function clampSpells() {
     var max = G.maxSpellSlots();
     if (!G.state.spells) G.state.spells = [];

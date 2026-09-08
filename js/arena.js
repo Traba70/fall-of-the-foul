@@ -39,7 +39,7 @@
   };
 
   function makePlayer(d) {
-    var spells = G.getSpells();
+    var spells = G.canCastSpells() ? G.getSpells() : [];
     var scd = [], scm = []; for (var i = 0; i < spells.length; i++) { scd.push(0); scm.push(SPELLS[spells[i]] ? SPELLS[spells[i]].cd : 1); }
     return {
       x: WORLD.w / 2, y: WORLD.h - WORLD.margin - 120, r: 17, facing: -Math.PI / 2,
@@ -161,6 +161,8 @@
       })(i);
       pad.appendChild(b);
     }
+    // no wand in hand -> no spells -> hide the pad entirely
+    pad.style.display = pad.children.length ? "" : "none";
   }
   function keyboardDir() { var x = 0, y = 0, k = input.keys; if (k["a"] || k["arrowleft"]) x -= 1; if (k["d"] || k["arrowright"]) x += 1; if (k["w"] || k["arrowup"]) y -= 1; if (k["s"] || k["arrowdown"]) y += 1; var m = len(x, y); return m > 0 ? { x: x / m, y: y / m } : null; }
   function currentMoveDir() { if (input.active && input.mag > 0.05) return { x: input.dir.x, y: input.dir.y }; var kd = keyboardDir(); return kd || null; }

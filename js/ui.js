@@ -78,7 +78,10 @@
         '<div class="meta"><div class="nm">' + (sp ? sp.name : "— Empty —") + '</div>' +
         '<div class="sub">' + (sp ? abilityMeta(sp) : "Spell slot " + (i + 1)) + '</div></div></div>';
     }
-    html += "</div><div class=\"buffline\">Cast these from the left side in battle. Talismans can add more slots.</div></div>";
+    html += "</div><div class=\"buffline\">" + (G.canCastSpells()
+      ? "Cast these from the left side in battle. Talismans can add more slots."
+      : "⚠ Equip a <b>wand</b> in a hand (right or left) to cast spells. Talismans can add more slots.")
+      + "</div></div>";
 
     // attributes
     html += '<div class="card"><div class="card-title">Attributes</div><div class="statgrid">';
