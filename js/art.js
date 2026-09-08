@@ -476,23 +476,143 @@
   // ITEM ICONS (data URLs, cached)
   // ============================================================
   G._iconCache = {};
+  // ---- pixel-art item icons (dark medieval, chunky pixels) ----
+  var PX_G = 16, PX_S = 4, PX_SZ = PX_G * PX_S;                 // 16x16 logical grid -> 64px sprite
+  function pcell(c, x, y, col) { if (!col || x < 0 || y < 0 || x >= PX_G || y >= PX_G) return; c.fillStyle = col; c.fillRect(x * PX_S, y * PX_S, PX_S, PX_S); }
+  function ph(c, y, x0, x1, col) { for (var x = x0; x <= x1; x++) pcell(c, x, y, col); }
+  function pv(c, x, y0, y1, col) { for (var y = y0; y <= y1; y++) pcell(c, x, y, col); }
+  function pbox(c, x0, y0, x1, y1, col) { for (var y = y0; y <= y1; y++) for (var x = x0; x <= x1; x++) pcell(c, x, y, col); }
+  function pdisc(c, cx, cy, rr, col) { for (var y = -rr; y <= rr; y++) for (var x = -rr; x <= rr; x++) if (x * x + y * y <= rr * rr + rr) pcell(c, cx + x, cy + y, col); }
+  function pxPal(col, gem) {
+    return { o: "#0a0806", m: col, l: lighten(col, .42), d: darken(col, .55),
+      w: "#6a4a2a", W: "#38271a", g: "#c8a862", G: "#e9d29a", e: "#463322", E: "#241811",
+      k: "#c3c8cf", K: "#70757c", s: "#e6ddc4", x: gem || col, X: lighten(gem || col, .55) };
+  }
+  function iconKind(def) {
+    if (def.slot === "weapon") {
+      if (def.type === "melee") return "sword";
+      if (def.type === "ranged") return /pistol|gun|musket|cannon/.test(def.id) ? "pistol" : "bow";
+      if (def.type === "magic") return "wand";
+    }
+    if (def.type === "shield") return /tome|book|grimoire/.test(def.id) ? "tome" : "shield";
+    if (def.type === "ring") return "ring";
+    if (def.type === "talisman") return "talisman";
+    if (def.slot === "helmet") return "helm";
+    if (def.slot === "chest") return "chest";
+    if (def.slot === "legs") return "legs";
+    return "chest";
+  }
+
+  function pxSword(c, P) {
+    pcell(c, 7, 0, P.o); pcell(c, 8, 0, P.o);
+    for (var y = 1; y <= 8; y++) { pcell(c, 6, y, P.o); pcell(c, 7, y, P.l); pcell(c, 8, y, P.d); pcell(c, 9, y, P.o); }
+    ph(c, 9, 4, 11, P.g); pcell(c, 3, 9, P.o); pcell(c, 12, 9, P.o); pcell(c, 4, 10, P.g); pcell(c, 11, 10, P.g); // crossguard
+    for (var gy = 10; gy <= 13; gy++) { pcell(c, 6, gy, P.o); pcell(c, 7, gy, P.e); pcell(c, 8, gy, P.e); pcell(c, 9, gy, P.o); } // grip
+    pcell(c, 7, 11, P.w); pcell(c, 8, 12, P.w);
+    pcell(c, 6, 14, P.o); pcell(c, 7, 14, P.g); pcell(c, 8, 14, P.g); pcell(c, 9, 14, P.o); pcell(c, 7, 15, P.G); // pommel
+  }
+  function pxBow(c, P) {
+    var pts = [[7, 1], [5, 2], [4, 3], [3, 4], [3, 5], [3, 6], [3, 7], [3, 8], [3, 9], [3, 10], [4, 11], [5, 12], [7, 13]];
+    for (var i = 0; i < pts.length; i++) { pcell(c, pts[i][0], pts[i][1], P.w); pcell(c, pts[i][0] - 1, pts[i][1], P.W); }
+    pcell(c, 7, 1, P.o); pcell(c, 7, 13, P.o); // limb tips
+    pv(c, 7, 2, 12, P.s); // string
+    ph(c, 7, 4, 14, P.W); pcell(c, 13, 7, P.k); pcell(c, 14, 7, P.k); // arrow shaft is diagonal in reality; keep straight
+    pcell(c, 13, 6, P.k); pcell(c, 13, 8, P.k); // head barbs
+    pcell(c, 4, 6, P.x); pcell(c, 4, 8, P.x); // fletching
+  }
+  function pxPistol(c, P) {
+    pbox(c, 4, 4, 13, 5, P.m); ph(c, 4, 4, 13, P.l); ph(c, 6, 4, 12, P.d); // barrel
+    pcell(c, 14, 4, P.K); pcell(c, 14, 5, P.K); pcell(c, 13, 4, P.o); // muzzle
+    pcell(c, 5, 3, P.k); pcell(c, 6, 3, P.k); // hammer
+    var gp = [[6, 6], [6, 7], [5, 8], [5, 9], [4, 10], [4, 11], [4, 12]];
+    for (var i = 0; i < gp.length; i++) { pcell(c, gp[i][0], gp[i][1], P.w); pcell(c, gp[i][0] + 1, gp[i][1], P.W); }
+    pcell(c, 8, 7, P.g); pcell(c, 8, 8, P.d); // trigger
+  }
+  function pxWand(c, P) {
+    pv(c, 8, 5, 14, P.w); pv(c, 9, 5, 14, P.W); pcell(c, 8, 15, P.W); // shaft
+    pcell(c, 6, 4, P.g); pcell(c, 10, 4, P.g); pcell(c, 7, 3, P.g); pcell(c, 9, 3, P.g); // claw setting
+    pdisc(c, 8, 3, 2, P.x); pcell(c, 7, 2, P.X); pcell(c, 8, 1, P.X); // gem
+    pcell(c, 11, 2, P.X); pcell(c, 5, 6, P.X); // sparkles
+  }
+  function pxShield(c, P) {
+    ph(c, 1, 4, 11, P.o);
+    for (var y = 2; y <= 8; y++) { pcell(c, 3, y, P.o); pcell(c, 4, y, P.l); pbox(c, 5, y, 10, y, P.m); pcell(c, 11, y, P.d); pcell(c, 12, y, P.o); }
+    pcell(c, 3, 9, P.o); ph(c, 9, 4, 11, P.m); pcell(c, 4, 9, P.l); pcell(c, 11, 9, P.d); pcell(c, 12, 9, P.o);
+    pcell(c, 4, 10, P.o); ph(c, 10, 5, 10, P.m); pcell(c, 5, 10, P.l); pcell(c, 10, 10, P.d); pcell(c, 11, 10, P.o);
+    pcell(c, 5, 11, P.o); ph(c, 11, 6, 9, P.m); pcell(c, 10, 11, P.o);
+    pcell(c, 6, 12, P.o); ph(c, 12, 7, 8, P.m); pcell(c, 9, 12, P.o);
+    pcell(c, 7, 13, P.o); pcell(c, 8, 13, P.o);
+    pv(c, 7, 3, 11, P.g); pv(c, 8, 3, 11, P.G); ph(c, 5, 5, 10, P.g); // cross boss
+    pcell(c, 7, 5, P.G); pcell(c, 8, 5, P.G);
+  }
+  function pxTome(c, P) {
+    pbox(c, 4, 2, 12, 13, P.m); // cover
+    pv(c, 3, 2, 13, P.W); pv(c, 4, 2, 13, P.d); // spine
+    pv(c, 12, 3, 12, P.s); pv(c, 11, 3, 12, P.l); ph(c, 13, 5, 12, P.s); // pages
+    ph(c, 2, 4, 12, P.d);
+    pdisc(c, 8, 7, 2, P.x); pcell(c, 8, 6, P.X); // gem clasp
+    pcell(c, 6, 3, P.g); pcell(c, 11, 3, P.g); pcell(c, 6, 12, P.g); pcell(c, 11, 12, P.g); // corner studs
+  }
+  function pxHelm(c, P) {
+    pcell(c, 7, 1, P.g); pcell(c, 8, 1, P.g); // crest knob
+    ph(c, 2, 6, 9, P.o);
+    for (var y = 3; y <= 11; y++) { pcell(c, 5, y, P.o); pcell(c, 6, y, P.l); pbox(c, 7, y, 8, y, P.m); pcell(c, 9, y, P.d); pcell(c, 10, y, P.o); }
+    ph(c, 9, 6, 9, P.o); pv(c, 7, 7, 11, P.o); pv(c, 8, 7, 11, P.E); // T-visor
+    ph(c, 12, 6, 9, P.o);
+  }
+  function pxCuirass(c, P) {
+    ph(c, 2, 4, 11, P.o); // shoulders top
+    for (var y = 3; y <= 10; y++) {
+      var ins = y >= 9 ? 1 : 0;
+      pcell(c, 4 + ins, y, P.o); pcell(c, 5 + ins, y, P.l); pbox(c, 6 + ins, y, 9 - ins, y, P.m); pcell(c, 10 - ins, y, P.d); pcell(c, 11 - ins, y, P.o);
+    }
+    ph(c, 11, 6, 9, P.o);
+    pv(c, 7, 3, 10, P.d); pv(c, 8, 3, 10, P.l); // central ridge
+    ph(c, 3, 5, 10, P.g); pcell(c, 7, 6, P.g); pcell(c, 8, 6, P.g); // collar + emblem
+  }
+  function pxLegs(c, P) {
+    ph(c, 2, 4, 11, P.g); ph(c, 3, 4, 11, P.o); // belt
+    for (var y = 4; y <= 12; y++) {
+      pcell(c, 4, y, P.o); pcell(c, 5, y, P.l); pcell(c, 6, y, P.m); pcell(c, 7, y, P.o);   // left greave
+      pcell(c, 8, y, P.o); pcell(c, 9, y, P.m); pcell(c, 10, y, P.d); pcell(c, 11, y, P.o); // right greave
+    }
+    ph(c, 8, 5, 6, P.G); ph(c, 8, 9, 10, P.G); // knees
+    ph(c, 13, 4, 7, P.W); ph(c, 13, 8, 11, P.W); // boots
+  }
+  function pxRing(c, P) {
+    for (var y = -4; y <= 4; y++) for (var x = -4; x <= 4; x++) { var dd = x * x + y * y; if (dd <= 17 && dd >= 6) pcell(c, 8 + x, 9 + y, x < 0 ? P.G : P.g); }
+    pdisc(c, 8, 4, 1, P.x); pcell(c, 8, 3, P.X); pcell(c, 7, 3, P.g); pcell(c, 9, 3, P.g); // gem
+  }
+  function pxTalisman(c, P) {
+    var ch = [[4, 2], [5, 3], [6, 4], [10, 4], [11, 3], [12, 2]];
+    for (var i = 0; i < ch.length; i++) pcell(c, ch[i][0], ch[i][1], P.g); // chain
+    pdisc(c, 8, 9, 4, P.g); pdisc(c, 8, 9, 3, P.o); // bezel
+    pcell(c, 8, 6, P.x); ph(c, 7, 7, 9, P.x); ph(c, 8, 6, 10, P.x); ph(c, 9, 6, 10, P.x); ph(c, 10, 7, 9, P.x); pcell(c, 8, 11, P.x); // gem diamond
+    pcell(c, 7, 8, P.X); pcell(c, 8, 7, P.X); // gem shine
+  }
+
   G.itemIconURL = function (id) {
     if (G._iconCache[id]) return G._iconCache[id];
     var def = ITEMS[id]; if (!def) return "";
-    var c = document.createElement("canvas"); c.width = 44; c.height = 44; var ctx = c.getContext("2d");
-    ctx.fillStyle = "#0d0b09"; ctx.fillRect(0, 0, 44, 44); var col = def.color || "#c8b89a";
-    ctx.save(); ctx.translate(22, 22);
-    if (def.slot === "weapon" && def.type === "melee") { ctx.strokeStyle = "#8a6d33"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-8, 8); ctx.lineTo(8, -8); ctx.stroke(); ctx.strokeStyle = col; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-2, 14); ctx.lineTo(14, -14); ctx.stroke(); ctx.strokeStyle = "#8a6d33"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-10, 2); ctx.lineTo(-2, 10); ctx.stroke(); }
-    else if (def.slot === "weapon" && def.type === "ranged") { ctx.strokeStyle = col; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(-2, 0, 13, -1.1, 1.1); ctx.stroke(); ctx.strokeStyle = "#e9e2cf"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(3, -11); ctx.lineTo(3, 11); ctx.stroke(); ctx.strokeStyle = "#8a6d33"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(14, 0); ctx.stroke(); }
-    else if (def.slot === "weapon" && def.type === "magic") { ctx.strokeStyle = "#3a2f22"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-10, 12); ctx.lineTo(6, -8); ctx.stroke(); ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = 10; ctx.beginPath(); ctx.arc(8, -11, 7, 0, TAU); ctx.fill(); ctx.shadowBlur = 0; }
-    else if (def.type === "shield") { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(13, -7); ctx.lineTo(13, 8); ctx.lineTo(0, 16); ctx.lineTo(-13, 8); ctx.lineTo(-13, -7); ctx.closePath(); ctx.fill(); ctx.fillStyle = "#c8a862"; ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, TAU); ctx.fill(); }
-    else if (def.type === "ring") { ctx.strokeStyle = "#c8a862"; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, 3, 9, 0, TAU); ctx.stroke(); ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = 8; ctx.beginPath(); ctx.arc(0, -8, 5, 0, TAU); ctx.fill(); ctx.shadowBlur = 0; }
-    else if (def.type === "talisman") { ctx.strokeStyle = "#c8a862"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(-11, -14); ctx.quadraticCurveTo(0, -3, 11, -14); ctx.stroke(); ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = 10; ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(9, 6); ctx.lineTo(0, 17); ctx.lineTo(-9, 6); ctx.closePath(); ctx.fill(); ctx.shadowBlur = 0; ctx.strokeStyle = "#e7cf95"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, -3); ctx.lineTo(0, 17); ctx.stroke(); }
-    else if (def.slot === "helmet") { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0, -2, 12, Math.PI, TAU); ctx.lineTo(11, 10); ctx.quadraticCurveTo(0, 16, -11, 10); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "#100c08"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-7, 2); ctx.lineTo(7, 2); ctx.stroke(); }
-    else if (def.slot === "chest") { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(-13, -12); ctx.quadraticCurveTo(0, -18, 13, -12); ctx.lineTo(10, 15); ctx.lineTo(-10, 15); ctx.closePath(); ctx.fill(); ctx.fillStyle = "rgba(200,168,98,.4)"; ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(6, 4); ctx.lineTo(0, 12); ctx.lineTo(-6, 4); ctx.closePath(); ctx.fill(); }
-    else { ctx.fillStyle = col; ctx.fillRect(-11, -13, 8, 26); ctx.fillRect(3, -13, 8, 26); }
-    ctx.restore();
-    ctx.strokeStyle = "#3a3226"; ctx.lineWidth = 2; ctx.strokeRect(1, 1, 42, 42);
+    var c = document.createElement("canvas"); c.width = PX_SZ; c.height = PX_SZ;
+    var ctx = c.getContext("2d"); ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = "#0d0b09"; ctx.fillRect(0, 0, PX_SZ, PX_SZ);                 // dark stone backdrop
+    ctx.fillStyle = "#12100c"; for (var i = 0; i < PX_G; i += 2) for (var j = 0; j < PX_G; j += 2) if ((i + j) % 4 === 0) pcell(ctx, i, j, "#100d0a"); // faint texture
+    var col = def.color || "#c8b89a", kind = iconKind(def);
+    var gem = (kind === "wand" || kind === "ring" || kind === "talisman") ? col : null;
+    var P = pxPal(col, gem);
+    if (kind === "sword") pxSword(ctx, P);
+    else if (kind === "bow") pxBow(ctx, P);
+    else if (kind === "pistol") pxPistol(ctx, P);
+    else if (kind === "wand") pxWand(ctx, P);
+    else if (kind === "shield") pxShield(ctx, P);
+    else if (kind === "tome") pxTome(ctx, P);
+    else if (kind === "helm") pxHelm(ctx, P);
+    else if (kind === "chest") pxCuirass(ctx, P);
+    else if (kind === "legs") pxLegs(ctx, P);
+    else if (kind === "ring") pxRing(ctx, P);
+    else if (kind === "talisman") pxTalisman(ctx, P);
+    else pxCuirass(ctx, P);
     var url = c.toDataURL(); G._iconCache[id] = url; return url;
   };
 

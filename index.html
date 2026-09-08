@@ -105,6 +105,8 @@
   .seg .opt{flex:1; text-align:center; padding:10px 4px; border:1px solid var(--edge); border-radius:8px; background:var(--panel2); color:var(--ink-dim); font-size:13px; letter-spacing:.08em; text-transform:uppercase;}
   .seg .opt.sel{border-color:var(--gold); color:var(--gold-bright); background:linear-gradient(180deg,#2a2318,#1c1712);}
 
+  /* pixel-art item icons: keep hard edges when scaled */
+  .icn, .icn-lg{image-rendering:pixelated; image-rendering:crisp-edges;}
   /* equipment grid */
   .slots{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
   .slot{display:flex; align-items:center; gap:10px; padding:9px; border:1px solid var(--edge); border-radius:9px; background:var(--panel2);}

@@ -275,11 +275,6 @@
       '<div class="statrow"><span class="k">Highest Stage Cleared</span><span class="v">' + G.state.stageCleared + "</span></div></div>";
     html += '<div class="foot-actions" style="margin-top:12px"><button class="btn danger" id="reset-btn">⟳ Abandon & Start Anew</button></div>';
     el("lv-body").innerHTML = html;
-    el("lv-body").addEventListener("click", function (e) {
-      var p = e.target.closest("[data-stat]");
-      if (p) { if (!G.levelUpStat(p.getAttribute("data-stat"))) UI.toast("Not enough souls"); UI.renderLevelUp(); return; }
-      if (e.target.id === "reset-btn") { if (window.confirm("Abandon this character and start a new game?")) { G.resetGame(); UI.showScreen("home"); UI.toast("A new journey begins."); } }
-    });
   };
 
   UI.init = function () {
@@ -288,6 +283,14 @@
     el("nav-fight").addEventListener("click", function () { G.startFight(); });
     el("gear-back").addEventListener("click", function () { UI.showScreen("home"); });
     el("lv-back").addEventListener("click", function () { UI.showScreen("home"); });
+    // bound ONCE here (delegation on the persistent container) — binding inside
+    // renderLevelUp() stacked a new listener every re-render, so one click applied
+    // several stat purchases / levels at once.
+    el("lv-body").addEventListener("click", function (e) {
+      var p = e.target.closest("[data-stat]");
+      if (p) { if (!G.levelUpStat(p.getAttribute("data-stat"))) UI.toast("Not enough souls"); UI.renderLevelUp(); return; }
+      if (e.target.id === "reset-btn") { if (window.confirm("Abandon this character and start a new game?")) { G.resetGame(); UI.showScreen("home"); UI.toast("A new journey begins."); } }
+    });
   };
 
 })(window);

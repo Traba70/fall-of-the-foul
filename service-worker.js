@@ -1,5 +1,5 @@
 /* Fall of the Foul — offline app shell cache */
-var CACHE = "fotf-v8";
+var CACHE = "fotf-v9";
 var ASSETS = [
   ".",
   "index.html",

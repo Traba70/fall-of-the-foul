@@ -251,7 +251,7 @@
   }
   function hurtEnemy(e, dmg, crit, o) {
     e.hp -= dmg; e.hitT = 0.12;
-    if (o && o.burn) { e.burnT = 2.4; e.burnDmg = dmg * 0.12; }
+    if (o && o.burn) { e.burnT = 1.5; e.burnDmg = dmg * 0.12; }
     if (o && o.slow) e.slowT = 1.6;
     dmgNumber(e.x, e.y - e.r, Math.round(dmg), crit);
     for (var i = 0; i < (crit ? 5 : 3); i++) A.particles.push({ x: e.x, y: e.y, vx: rnd(-90, 90), vy: rnd(-90, 90), life: 0.3, max: 0.3, color: crit ? "#ffd873" : "#c0392b", size: crit ? 3 : 2 });
