@@ -31,7 +31,8 @@
     var d = G.derived();
     A = { phase: "fighting", stage: G.state.stage, waveIdx: 0,
       enemies: [], pProj: [], eProj: [], hazards: [], particles: [], effects: [],
-      spawnQ: [], boss: null, runSouls: 0, shake: 0, breather: 0, time: 0, pendingChest: null };
+      spawnQ: [], boss: null, runSouls: 0, shake: 0, breather: 0, time: 0, pendingChest: null,
+      chests: [], gate: null, looting: false, lootTimer: 0, nearChest: null, nearGate: false };
     A.player = makePlayer(d);
     buildSpellButtons();
     hideOverlays(); startWave();
@@ -126,6 +127,8 @@
     bindBtn("btn-attack", doAttack);
     bindBtn("btn-skill", doSkill);
     bindBtn("btn-dodge", doDodge);
+    bindBtn("btn-open", onContextAction);
+    var skB = document.getElementById("btn-skip"); if (skB) skB.addEventListener("click", function () { if (A && A.phase === "looting" && !A.gate) endLoot(); });
     document.getElementById("pause-btn").addEventListener("click", function () { togglePause(true); });
     document.getElementById("pz-resume").addEventListener("click", function () { togglePause(false); });
     document.getElementById("pz-quit").addEventListener("click", function () { exitToMenu(); });
@@ -269,7 +272,7 @@
   }
 
   // ---------- loop / update ----------
-  function loop() { raf = requestAnimationFrame(loop); var t = nowT(), dt = Math.min(0.033, (t - lastT) / 1000); lastT = t; if (A && A.phase === "fighting") update(dt); if (A) render(); }
+  function loop() { raf = requestAnimationFrame(loop); var t = nowT(), dt = Math.min(0.033, (t - lastT) / 1000); lastT = t; if (A) { if (A.phase === "fighting") update(dt); else if (A.phase === "looting") lootUpdate(dt); render(); } }
 
   function update(dt) {
     A.time += dt; var p = A.player, d = p.d, i;
@@ -420,12 +423,7 @@
     A.particles.push({ x: e.x, y: e.y - 6, vx: 0, vy: -30, life: 0.8, max: 0.8, text: "+" + gain, color: "#d9c37a", size: 12 });
     for (var i = 0; i < 8; i++) A.particles.push({ x: e.x, y: e.y, vx: rnd(-80, 80), vy: rnd(-120, -20), life: 0.5, max: 0.5, color: "#c0392b", size: 2 });
   }
-  function onWaveClear() {
-    A.phase = "clearing"; A.waveIdx++;
-    var luck = A.player.d.luck, chance = Math.min(0.85, 0.35 + luck * 0.008);
-    if (Math.random() < chance) { A.pendingChest = genReward(luck, A.stage, false); showChest(A.pendingChest, false); }
-    else { toast("Wave Cleared"); A.breather = 1.2; A.phase = "fighting"; }
-  }
+  function onWaveClear() { A.waveIdx++; startLoot(false); }
   function advanceWave() { if (A.phase === "fighting") startWave(); }
   function onBossDead() {
     var b = A.boss; killBossFX(b);
@@ -433,7 +431,95 @@
     A.boss = null; document.getElementById("boss-bar").style.display = "none";
     G.state.stageCleared = Math.max(G.state.stageCleared, A.stage); G.state.stage = A.stage + 1;
     G.state.level = 1 + G.state.statsBought + G.state.stageCleared; G.save();
-    A.phase = "bossreward"; A.pendingChest = genReward(A.player.d.luck, A.stage, true); showChest(A.pendingChest, true);
+    var p = A.player; p.hp = p.maxHp; p.mana = p.maxMana;
+    startLoot(true);
+  }
+
+  // ---------- loot / chests / gate ----------
+  var OPEN_RANGE = 26;
+  function spawnChest() {
+    var p = A.player, x, y, tries = 0;
+    do {
+      x = rnd(WORLD.margin + 70, WORLD.w - WORLD.margin - 70);
+      y = rnd(WORLD.margin + 170, WORLD.h - WORLD.margin - 70);
+      tries++;
+    } while (len(x - p.x, y - p.y) < 150 && tries < 24);
+    return { x: x, y: y, r: 22, opened: false, openT: 0 };
+  }
+  function startLoot(boss) {
+    A.looting = true; A.phase = "looting"; A.chests = []; A.gate = null; A.nearChest = null; A.nearGate = false;
+    var n = boss ? ri(3, 4) : ri(1, 2), i;
+    for (i = 0; i < n; i++) A.chests.push(spawnChest());
+    if (boss) { A.gate = { x: WORLD.w / 2, y: WORLD.margin + 34, r: 46 }; A.lootTimer = 0; toast("The boss falls — take the spoils, then the Gate"); }
+    else { A.lootTimer = 15; toast("Wave cleared — loot!"); }
+    showLootUI(boss);
+  }
+  function nearestChest() {
+    var p = A.player, best = null, bd = 1e9;
+    for (var i = 0; i < A.chests.length; i++) { var c = A.chests[i]; if (c.opened) continue; var dd = len(p.x - c.x, p.y - c.y); if (dd < bd) { bd = dd; best = c; } }
+    return (best && bd < best.r + p.r + OPEN_RANGE) ? best : null;
+  }
+  function openChest(c) {
+    if (!c || c.opened) return; c.opened = true; c.openT = 0; A.shake = Math.min(12, A.shake + 6);
+    for (var i = 0; i < 16; i++) A.particles.push({ x: c.x, y: c.y - 6, vx: rnd(-100, 100), vy: rnd(-170, -30), life: rnd(0.5, 1.1), max: 1.1, color: i % 2 ? "#e7cf95" : "#d9c37a", size: rnd(2, 4) });
+    var reward = genReward(A.player.d.luck, A.stage, !!A.gate);
+    A.particles.push({ x: c.x, y: c.y - 22, vx: 0, vy: -24, life: 1.6, max: 1.6, text: reward.name, color: "#e9d29a", size: 13 });
+    toast(reward.kind === "ability" ? "Learned: " + reward.name : (reward.kind === "souls" ? reward.name : "Acquired: " + reward.name));
+    updateContextButton();
+  }
+  function endLoot() {
+    if (!A.looting) return;
+    A.looting = false; A.chests = []; A.gate = null; hideLootUI(); A.phase = "fighting"; startWave();
+  }
+  function enterGate() {
+    A.looting = false; A.chests = []; A.gate = null; hideLootUI();
+    A.stage = G.state.stage; A.waveIdx = 0; A.player = makePlayer(G.derived()); buildSpellButtons();
+    A.enemies = []; A.pProj = []; A.eProj = []; A.hazards = []; A.effects = []; A.particles = []; A.spawnQ = [];
+    A.phase = "fighting"; toast("Stage " + A.stage); startWave();
+  }
+  function onContextAction() {
+    if (!A || A.phase !== "looting") return;
+    if (A.nearGate) enterGate();
+    else if (A.nearChest) openChest(A.nearChest);
+  }
+  function showLootUI(boss) {
+    document.querySelector(".actionpad").style.display = "none";
+    document.getElementById("spellpad").style.display = "none";
+    document.getElementById("loot-banner").style.display = "flex";
+    document.getElementById("btn-skip").style.display = boss ? "none" : "block";
+    updateLootBanner();
+  }
+  function updateLootBanner() {
+    var el = document.getElementById("loot-timer");
+    if (A.gate) el.textContent = "Spoils await — enter the Gate ▲";
+    else el.textContent = "Loot!  " + Math.ceil(Math.max(0, A.lootTimer)) + "s";
+  }
+  function hideLootUI() {
+    var lb = document.getElementById("loot-banner"); if (lb) lb.style.display = "none";
+    var bo = document.getElementById("btn-open"); if (bo) bo.style.display = "none";
+    var ap = document.querySelector(".actionpad"); if (ap) ap.style.display = "";
+    if (A && A.player) buildSpellButtons();
+  }
+  function updateContextButton() {
+    var btn = document.getElementById("btn-open"); if (!btn) return;
+    if (A.phase === "looting" && (A.nearGate || A.nearChest)) { btn.style.display = "flex"; btn.textContent = A.nearGate ? "ENTER" : "OPEN"; }
+    else btn.style.display = "none";
+  }
+  function lootUpdate(dt) {
+    A.time += dt; var p = A.player, d = p.d;
+    p.stam = Math.min(p.maxStam, p.stam + STAM_REGEN * dt);
+    p.hp = Math.min(p.maxHp, p.hp + d.hpRegen * dt); p.mana = Math.min(p.maxMana, p.mana + d.manaRegen * dt);
+    p.iframe = Math.max(0, p.iframe - dt); p.swingT = Math.max(0, p.swingT - dt * 6);
+    var mv = currentMoveDir(), moving = false;
+    if (mv) { var spd = p.speed * (input.active ? Math.max(0.35, input.mag) : 1); p.x += mv.x * spd * dt; p.y += mv.y * spd * dt; p.facing = ang(mv.x, mv.y); moving = true; }
+    p.x = clamp(p.x, WORLD.margin, WORLD.w - WORLD.margin); p.y = clamp(p.y, WORLD.margin, WORLD.h - WORLD.margin);
+    if (moving) p.walkPhase += dt * 12;
+    for (var i = 0; i < A.chests.length; i++) if (A.chests[i].opened) A.chests[i].openT += dt;
+    updateEffects(dt); updateParticles(dt); A.shake *= 0.86; updateCamera();
+    A.nearChest = nearestChest(); A.nearGate = !!(A.gate && len(p.x - A.gate.x, p.y - A.gate.y) < A.gate.r + p.r + 8);
+    updateContextButton();
+    if (!A.gate) { A.lootTimer -= dt; if (A.lootTimer <= 0) { endLoot(); return; } updateLootBanner(); }
+    updateHUD();
   }
   function killBossFX(b) { A.shake = 20; for (var i = 0; i < 40; i++) A.particles.push({ x: b.x, y: b.y, vx: rnd(-200, 200), vy: rnd(-260, 40), life: rnd(0.6, 1.2), max: 1.2, color: i % 2 ? "#e7cf95" : "#c0392b", size: rnd(2, 4) }); }
 
@@ -496,8 +582,8 @@
     document.getElementById("ov-btns").innerHTML = '<button class="btn gold" id="r-menu2">Return to Menu</button>';
     document.getElementById("ov-result").classList.add("active"); document.getElementById("r-menu2").onclick = exitToMenu; G.save();
   }
-  function togglePause(on) { if (!A) return; if (on && A.phase === "fighting") { A.phase = "paused"; document.getElementById("ov-pause").classList.add("active"); } else if (!on && A.phase === "paused") { A.phase = "fighting"; document.getElementById("ov-pause").classList.remove("active"); lastT = nowT(); } }
-  function exitToMenu() { hideOverlays(); if (raf) cancelAnimationFrame(raf); raf = null; A = null; G.save(); G.UI.showScreen("home"); }
+  function togglePause(on) { if (!A) return; if (on && (A.phase === "fighting" || A.phase === "looting")) { A._pre = A.phase; A.phase = "paused"; document.getElementById("ov-pause").classList.add("active"); } else if (!on && A.phase === "paused") { A.phase = A._pre || "fighting"; document.getElementById("ov-pause").classList.remove("active"); lastT = nowT(); } }
+  function exitToMenu() { hideOverlays(); hideLootUI(); if (raf) cancelAnimationFrame(raf); raf = null; A = null; G.save(); G.UI.showScreen("home"); }
 
   // ---------- HUD ----------
   function updateHUD() {
@@ -528,6 +614,8 @@
     var sx = (Math.random() - 0.5) * A.shake, sy = (Math.random() - 0.5) * A.shake;
     ctx.save(); ctx.translate(Math.round(-cam.x + VIEW.w / 2 + sx), Math.round(-cam.y + VIEW.h / 2 + sy));
     drawEnvironment(); drawHazards();
+    if (A.gate) drawGate(A.gate);
+    for (var ci = 0; A.chests && ci < A.chests.length; ci++) { var ch = A.chests[ci]; G.drawChestWorld(ctx, ch.x, ch.y, ch.r, ch.opened, A.time); }
     var ents = A.enemies.slice(); if (A.boss) ents.push(A.boss); ents.push(A.player); ents.sort(function (a, b) { return a.y - b.y; });
     for (var i = 0; i < ents.length; i++) { var e = ents[i]; if (e === A.player) drawPlayer(e); else if (e === A.boss) G.drawBossTop(ctx, e); else G.drawEnemyTop(ctx, e); }
     drawProjectiles(); drawEffects(); drawParticles(); ctx.restore();
@@ -548,6 +636,24 @@
   function drawTorch(x, y) { var f = 0.7 + 0.3 * Math.sin(A.time * 8 + x); var g = ctx.createRadialGradient(x, y, 4, x, y, 90 * f); g.addColorStop(0, "rgba(240,170,70,.5)"); g.addColorStop(1, "rgba(240,170,70,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 90 * f, 0, TAU); ctx.fill(); ctx.fillStyle = "#ffcf7a"; ctx.beginPath(); ctx.arc(x, y, 5, 0, TAU); ctx.fill(); }
   function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
   function drawPlayer(p) { if (p.iframe > 0) ctx.globalAlpha = 0.55 + 0.45 * Math.sin(A.time * 40); G.drawHeroTop(ctx, p); ctx.globalAlpha = 1; }
+  function drawGate(g) {
+    var t = A.time, x = g.x, y = g.y, ps = g.r / 7;
+    var gr = ctx.createRadialGradient(x, y, 4, x, y, g.r * 2); gr.addColorStop(0, "rgba(140,210,255,.45)"); gr.addColorStop(.5, "rgba(120,180,255,.14)"); gr.addColorStop(1, "rgba(140,210,255,0)");
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, g.r * 2, 0, TAU); ctx.fill();
+    function B(gx, gy, w, h, col) { ctx.fillStyle = col; ctx.fillRect(Math.round(x + gx * ps), Math.round(y + gy * ps), Math.ceil(w * ps), Math.ceil(h * ps)); }
+    var stone = "#3a3630", stoneH = "#585249", stoneS = "#221f19", ol = "#0e0c09";
+    // portal energy behind the arch (animated)
+    for (var i = 0; i < 5; i++) { var a = 0.55 - i * 0.1; ctx.fillStyle = "rgba(120," + (205 - i * 12) + ",255," + a + ")"; ctx.beginPath(); ctx.ellipse(x, y - ps, (5 - i * 0.6) * ps, (6.5 - i * 0.7) * ps, 0, 0, TAU); ctx.fill(); }
+    for (i = 0; i < 6; i++) { var aa = t * 1.5 + i * 1.05; ctx.fillStyle = "rgba(210,240,255,.85)"; ctx.beginPath(); ctx.arc(x + Math.cos(aa) * 3.4 * ps, y - ps + Math.sin(aa) * 4.6 * ps, ps * 0.5, 0, TAU); ctx.fill(); }
+    // stone arch (pixel blocks)
+    B(-8, -9, 1, 16, ol); B(7, -9, 1, 16, ol); B(-7, -10, 14, 1, ol);
+    B(-7, -8, 2, 15, stone); B(-7, -8, 1, 15, stoneH); B(-6, -8, 1, 15, stoneS);
+    B(5, -8, 2, 15, stone); B(5, -8, 1, 15, stoneH); B(6, -8, 1, 15, stoneS);
+    B(-6, -9, 12, 2, stone); B(-6, -9, 12, 1, stoneH); B(-6, -7, 12, 1, stoneS);
+    B(-6, 6, 12, 1, ol);
+    // rune keystone
+    B(-1, -9, 2, 1, "#e9d29a"); B(0, -8, 1, 1, "#9fe0ff");
+  }
   function drawHazards() {
     for (var i = 0; i < A.hazards.length; i++) { var h = A.hazards[i];
       if (h.t < h.warn) { var f = h.t / h.warn; ctx.strokeStyle = h.owner === "enemy" ? "rgba(200,60,50," + (0.4 + 0.4 * f) + ")" : "rgba(230,207,149,.6)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(h.x, h.y, h.r * (0.5 + 0.5 * f), 0, TAU); ctx.stroke(); ctx.fillStyle = h.owner === "enemy" ? "rgba(200,60,50,.10)" : "rgba(230,207,149,.10)"; ctx.beginPath(); ctx.arc(h.x, h.y, h.r * (0.5 + 0.5 * f), 0, TAU); ctx.fill(); }

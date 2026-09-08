@@ -106,7 +106,7 @@
   .seg .opt.sel{border-color:var(--gold); color:var(--gold-bright); background:linear-gradient(180deg,#2a2318,#1c1712);}
 
   /* pixel-art item icons: keep hard edges when scaled */
-  .icn, .icn-lg{image-rendering:pixelated; image-rendering:crisp-edges;}
+  .icn, .icn-lg, #portrait{image-rendering:pixelated; image-rendering:crisp-edges;}
   /* equipment grid */
   .slots{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
   .slot{display:flex; align-items:center; gap:10px; padding:9px; border:1px solid var(--edge); border-radius:9px; background:var(--panel2);}
@@ -183,6 +183,13 @@
   .act.skill{width:64px; height:64px; right:78px; bottom:70px; border-color:#3a4a6a; color:#a9c6ea; background:radial-gradient(60% 60% at 50% 40%,#1a2536,#111823);}
   .act.dodge{width:60px; height:60px; right:96px; bottom:6px; border-color:#3f5a2a; color:#b6d99a; background:radial-gradient(60% 60% at 50% 40%,#1c2a15,#12180d);}
   .act.disabled{opacity:.45;}
+  .act.ctxbtn{display:none; width:94px; height:94px; right:0; bottom:6px; border-color:#7a5a1a; color:#1a1508; font-size:15px; font-weight:700; letter-spacing:.08em;
+    background:linear-gradient(180deg,var(--gold-bright),var(--gold)); box-shadow:0 0 26px rgba(230,207,149,.55), var(--shadow); animation:ctxpulse 1s ease-in-out infinite;}
+  @keyframes ctxpulse{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
+  #loot-banner{position:absolute; top:60px; left:50%; transform:translateX(-50%); z-index:22; display:none; align-items:center; gap:12px;
+    background:rgba(10,8,6,.86); border:1px solid var(--gold); border-radius:22px; padding:7px 10px 7px 16px; box-shadow:var(--shadow);}
+  #loot-timer{color:var(--gold-bright); font-size:14px; letter-spacing:.05em; white-space:nowrap;}
+  #btn-skip{padding:6px 14px; font-size:13px; display:none;}
 
   /* ---------- overlays ---------- */
   .overlay{position:absolute; inset:0; display:none; align-items:center; justify-content:center; flex-direction:column;
@@ -328,6 +335,7 @@
       <div id="boss-bar"><div class="nm" id="boss-nm">Boss</div><div class="bar"><i id="bar-boss"></i></div></div>
     </div>
     <button id="pause-btn">II</button>
+    <div id="loot-banner"><span id="loot-timer"></span><button class="btn gold" id="btn-skip">Skip ›</button></div>
     <div class="controls">
       <div id="joy-zone"></div>
       <div class="spellpad" id="spellpad"></div>
@@ -336,6 +344,7 @@
         <button class="act dodge" id="btn-dodge">Dodge<svg class="cdring" viewBox="0 0 100 100"><circle id="cd-dodge" cx="50" cy="50" r="48" fill="none" stroke="#b6d99a" stroke-width="3" stroke-dasharray="301.6" stroke-dashoffset="0" transform="rotate(-90 50 50)"/></svg></button>
         <button class="act attack" id="btn-attack">Attack</button>
       </div>
+      <button class="act ctxbtn" id="btn-open">OPEN</button>
     </div>
 
     <!-- overlays live inside arena -->

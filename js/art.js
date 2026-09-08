@@ -29,27 +29,23 @@
   };
   G.drawPortrait = function (canvas) {
     var ctx = canvas.getContext("2d"), W = canvas.width, H = canvas.height;
-    ctx.clearRect(0, 0, W, H);
-    var s = W / 360, cx = W / 2, cy = H * 0.5, cls = G.state.cls;
-    var rw = G.getEquipped("right"), lw = G.getEquipped("left");
-    var C = {
-      helm: eqColor("helmet", "#6b6257"), chest: eqColor("chest", "#6b6257"), legs: eqColor("legs", "#574f45"),
-      wpn: rw ? ITEMS[rw.id].color : "#c8b89a", wtype: rw ? ITEMS[rw.id].type : "melee",
-      off: lw ? ITEMS[lw.id].color : null, offtype: lw ? ITEMS[lw.id].type : null
-    };
-    var mood = PORTRAIT_MOOD[cls] || PORTRAIT_MOOD.melee;
-    ctx.save(); ctx.translate(cx, cy); ctx.scale(s, s);
-    // backlight halo (colour of the class's element)
-    var bl = ctx.createRadialGradient(0, 0, 8, 0, 8, 198); bl.addColorStop(0, toRGBA(mood.back, .30)); bl.addColorStop(.45, toRGBA(mood.back, .08)); bl.addColorStop(1, toRGBA(mood.back, 0));
-    ctx.fillStyle = bl; ctx.beginPath(); ctx.arc(0, 4, 198, 0, TAU); ctx.fill();
-    // ground shadow
-    ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.beginPath(); ctx.ellipse(0, 171, 90, 19, 0, 0, TAU); ctx.fill();
-    if (cls === "melee") drawKnight(ctx, C);
-    else if (cls === "ranged") drawRanger(ctx, C);
-    else drawMage(ctx, C);
-    groundMist(ctx, mood.fog);
-    motes(ctx, 0, 18, 214, 252, mood.moteN, mood.mote, mood.moteSeed, 1.7);
-    ctx.restore();
+    ctx.clearRect(0, 0, W, H); ctx.imageSmoothingEnabled = false;
+    var cls = G.state.cls, mood = PORTRAIT_MOOD[cls] || PORTRAIT_MOOD.melee;
+    var chest = eqColor("chest", "#6b6257"), helm = G.getEquipped("helmet") ? eqColor("helmet", null) : null;
+    var rw = G.getEquipped("right"), wpnC = rw ? ITEMS[rw.id].color : "#c3c8cf", wtype = rw ? ITEMS[rw.id].type : "melee";
+    // atmospheric backlight
+    var bl = ctx.createRadialGradient(W / 2, H * 0.44, 8, W / 2, H * 0.48, W * 0.62);
+    bl.addColorStop(0, toRGBA(mood.back, .30)); bl.addColorStop(.5, toRGBA(mood.back, .07)); bl.addColorStop(1, toRGBA(mood.back, 0));
+    ctx.fillStyle = bl; ctx.fillRect(0, 0, W, H);
+    // floor shadow
+    ctx.fillStyle = "rgba(0,0,0,.5)"; ctx.beginPath(); ctx.ellipse(W / 2, H * 0.855, W * 0.26, H * 0.045, 0, 0, TAU); ctx.fill();
+    // large pixel hero
+    var o = heroOpts(cls, chest, helm, wpnC, wtype); o.scale = 2.75;
+    var r = W * 0.205, cy = H * 0.82 - r * 0.92;
+    pxHumanoid(ctx, W / 2, cy, r, false, o);
+    // drifting motes
+    var ps = W / 360;
+    motes(ctx, W / 2, H * 0.5, W * 0.62, H * 0.66, mood.moteN, mood.mote, mood.moteSeed, 1.6 * ps);
   };
 
   // limb capsule
@@ -330,105 +326,169 @@
   }
 
   // ============================================================
-  // TOP-DOWN humanoid (player + enemies)
+  // PIXEL SPRITES — upright chibi, flip L/R (heroes, enemies, bosses)
   // ============================================================
-  function humanoidTop(ctx, x, y, r, facing, body, accent, opts) {
-    opts = opts || {};
-    ctx.save(); ctx.translate(x, y); ctx.rotate(facing);
-    ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.beginPath(); ctx.ellipse(0, r * 0.5, r * 1.05, r * 0.55, 0, 0, TAU); ctx.fill();
-    var bob = opts.walk ? Math.sin(opts.walk) * r * 0.35 : 0;
-    ctx.fillStyle = darken(body, .5); ctx.beginPath(); ctx.arc(-r * 0.4, bob, r * 0.34, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.arc(r * 0.4, -bob, r * 0.34, 0, TAU); ctx.fill();
-    ctx.fillStyle = shade(ctx, 0, 0, r, lighten(body, .2), darken(body, .45)); ctx.strokeStyle = "rgba(0,0,0,.5)"; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = darken(body, .75); ctx.beginPath(); ctx.arc(0, -r * 0.7, r * 0.42, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.arc(0, r * 0.7, r * 0.42, 0, TAU); ctx.fill();
-    ctx.fillStyle = shade(ctx, r * 0.4, 0, r * 0.5, lighten(accent, .25), darken(accent, .4)); ctx.beginPath(); ctx.arc(r * 0.42, 0, r * 0.42, 0, TAU); ctx.fill();
-    if (opts.weapon) opts.weapon(ctx, r);
-    ctx.restore();
-  }
-  G.humanoidTop = humanoidTop;
-
-  G.drawHeroTop = function (ctx, p) {
-    var cls = G.state.cls, r = p.r;
-    var body = eqColor("chest", "#6b6257");
-    var rw = G.getEquipped("right"), wpnC = rw ? ITEMS[rw.id].color : "#c8b89a", wpnType = rw ? ITEMS[rw.id].type : "melee";
-    var swing = p.swingT || 0, walk = p.walkPhase || 0;
-    ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.beginPath(); ctx.ellipse(p.x, p.y + r * 0.55, r * 1.05, r * 0.5, 0, 0, TAU); ctx.fill();
-    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.facing);
-    if (cls === "melee") drawKnightTop(ctx, r, body, wpnC, wpnType, swing, walk);
-    else if (cls === "ranged") drawRangerTop(ctx, r, body, wpnC, wpnType, swing, walk);
-    else drawMageTop(ctx, r, body, wpnC, wpnType, swing, walk);
-    ctx.restore();
-  };
-  function weaponTop(ctx, r, wpnC, wpnType, swing) {
-    ctx.save(); if (swing > 0) ctx.rotate((1 - swing) * 1.6 - 0.8);
-    if (wpnType === "melee") { var g = ctx.createLinearGradient(r * 0.6, 0, r * 2.0, 0); g.addColorStop(0, lighten(wpnC, .5)); g.addColorStop(1, darken(wpnC, .5)); ctx.strokeStyle = g; ctx.lineWidth = 5; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(r * 0.6, r * 0.25); ctx.lineTo(r * 2.05, r * 0.25); ctx.stroke(); ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(r * 0.7, r * 0.25); ctx.lineTo(r * 1.95, r * 0.25); ctx.stroke(); ctx.lineCap = "butt"; }
-    else if (wpnType === "ranged") { ctx.strokeStyle = wpnC; ctx.lineWidth = 4; ctx.lineCap = "round"; ctx.beginPath(); ctx.arc(r * 0.95, 0, r * 0.75, -1.1, 1.1); ctx.stroke(); ctx.strokeStyle = "#e9e2cf"; ctx.lineWidth = 1.2; var yy = Math.sin(1.1) * r * 0.75, xx = Math.cos(1.1) * r * 0.75; ctx.beginPath(); ctx.moveTo(r * 0.95 + xx, -yy); ctx.lineTo(r * 0.95 + xx, yy); ctx.stroke(); ctx.lineCap = "butt"; }
-    else { ctx.strokeStyle = "#3a2f22"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(r * 0.5, r * 0.2); ctx.lineTo(r * 1.5, r * 0.2); ctx.stroke(); ctx.fillStyle = wpnC; ctx.shadowColor = wpnC; ctx.shadowBlur = 12; ctx.beginPath(); ctx.arc(r * 1.6, r * 0.2, r * 0.3, 0, TAU); ctx.fill(); ctx.shadowBlur = 0; }
-    ctx.restore();
-  }
-  function drawKnightTop(ctx, r, body, wpnC, wpnType, swing, walk) {
-    var steel = (body === "#6b6257") ? "#4a515b" : body, cloakC = "#6e1414";
-    var bob = Math.sin(walk) * r * 0.22;
-    ctx.fillStyle = toRGBA(cloakC, .85); ctx.beginPath(); ctx.moveTo(-r * 0.2, -r * 0.72); ctx.quadraticCurveTo(-r * 1.7, 0, -r * 0.2, r * 0.72); ctx.quadraticCurveTo(-r * 0.7, 0, -r * 0.2, -r * 0.72); ctx.fill();
-    ctx.fillStyle = darken(steel, .5); ctx.beginPath(); ctx.arc(-r * 0.15, -r * 0.5 + bob, r * 0.3, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.arc(-r * 0.15, r * 0.5 - bob, r * 0.3, 0, TAU); ctx.fill();
-    ctx.fillStyle = shade(ctx, 0, 0, r, lighten(steel, .2), darken(steel, .45)); ctx.strokeStyle = "rgba(0,0,0,.5)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = darken(steel, .28); ctx.beginPath(); ctx.arc(0, -r * 0.85, r * 0.42, 0, TAU); ctx.arc(0, r * 0.85, r * 0.42, 0, TAU); ctx.fill();     // pauldrons
-    ctx.fillStyle = metalGrad(ctx, r * 0.1, -r * 0.4, r * 0.7, r * 0.4, steel); ctx.beginPath(); ctx.arc(r * 0.42, 0, r * 0.44, 0, TAU); ctx.fill();       // helm
-    ctx.strokeStyle = "#111"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(r * 0.5, -r * 0.28); ctx.lineTo(r * 0.5, r * 0.28); ctx.stroke();
-    ctx.fillStyle = "#e0402a"; ctx.shadowColor = "#e0402a"; ctx.shadowBlur = 6; ctx.fillRect(r * 0.56, -r * 0.2, r * 0.12, r * 0.4); ctx.shadowBlur = 0;  // visor glow
-    ctx.strokeStyle = "#c8a862"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-r * 0.3, 0); ctx.lineTo(r * 0.28, 0); ctx.stroke();
-    weaponTop(ctx, r, wpnC, wpnType, swing);
-  }
-  function drawRangerTop(ctx, r, body, wpnC, wpnType, swing, walk) {
-    var leather = (body === "#6b6257") ? "#5a4326" : body, cloakC = "#26402b";
-    ctx.fillStyle = toRGBA(cloakC, .85); ctx.beginPath(); ctx.moveTo(-r * 0.1, -r * 0.75); ctx.quadraticCurveTo(-r * 1.5, 0, -r * 0.1, r * 0.75); ctx.quadraticCurveTo(-r * 0.5, 0, -r * 0.1, -r * 0.75); ctx.fill();
-    ctx.fillStyle = shade(ctx, 0, 0, r, lighten(leather, .18), darken(leather, .5)); ctx.strokeStyle = "rgba(0,0,0,.5)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, r * 0.92, 0, TAU); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = darken(cloakC, .2); ctx.beginPath(); ctx.moveTo(r * 0.95, 0); ctx.lineTo(-r * 0.1, -r * 0.5); ctx.lineTo(-r * 0.1, r * 0.5); ctx.closePath(); ctx.fill();    // hood
-    ctx.fillStyle = "#0a0d08"; ctx.beginPath(); ctx.arc(r * 0.36, 0, r * 0.28, 0, TAU); ctx.fill();
-    ctx.fillStyle = "#c9e37a"; ctx.shadowColor = "#c9e37a"; ctx.shadowBlur = 5; ctx.beginPath(); ctx.arc(r * 0.44, -r * 0.12, r * 0.07, 0, TAU); ctx.arc(r * 0.44, r * 0.12, r * 0.07, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
-    weaponTop(ctx, r, wpnType === "ranged" ? wpnC : "#8a6a3a", wpnType, swing);
-  }
-  function drawMageTop(ctx, r, body, wpnC, wpnType, swing, walk) {
-    var robe = (body === "#6b6257") ? "#2f2a52" : body, glow = (wpnType === "magic") ? wpnC : "#8fd0ff";
-    ringGlow(ctx, 0, 0, r * 1.9, toRGBA(glow, .16));
-    ctx.fillStyle = shade(ctx, 0, 0, r, lighten(robe, .2), darken(robe, .5)); ctx.strokeStyle = "rgba(0,0,0,.5)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = darken(robe, .28); ctx.beginPath(); ctx.moveTo(r * 0.95, 0); ctx.lineTo(-r * 0.05, -r * 0.55); ctx.lineTo(-r * 0.05, r * 0.55); ctx.closePath(); ctx.fill();     // hood
-    ctx.fillStyle = "#06060c"; ctx.beginPath(); ctx.arc(r * 0.36, 0, r * 0.3, 0, TAU); ctx.fill();
-    ctx.fillStyle = glow; ctx.shadowColor = glow; ctx.shadowBlur = 6; ctx.beginPath(); ctx.arc(r * 0.44, -r * 0.12, r * 0.08, 0, TAU); ctx.arc(r * 0.44, r * 0.12, r * 0.08, 0, TAU); ctx.fill(); ctx.shadowBlur = 0;
-    if (wpnType === "magic") { ctx.strokeStyle = "#3a2f22"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(r * 0.4, r * 0.3); ctx.lineTo(r * 1.5, r * 0.3); ctx.stroke(); ctx.fillStyle = glow; ctx.shadowColor = glow; ctx.shadowBlur = 12; ctx.beginPath(); ctx.arc(r * 1.62, r * 0.3, r * 0.28, 0, TAU); ctx.fill(); ctx.shadowBlur = 0; }
-    else weaponTop(ctx, r, wpnC, wpnType, swing);
-  }
-
   function ringGlow(ctx, x, y, r, c) { var g = ctx.createRadialGradient(x, y, r * 0.4, x, y, r); g.addColorStop(0, c); g.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); }
   G.ringGlow = ringGlow;
 
-  G.drawEnemyTop = function (ctx, e) {
-    var def = G.ENEMIES[e.type], rank = G.RANKS[e.rank], body = def.color;
-    if (e.windT > 0) body = lighten(def.color, 0.35 + 0.3 * Math.sin(Date.now() / 60));
-    humanoidTop(ctx, e.x, e.y, e.r, e.facing, body, darken(def.color, .8), {
-      walk: e.walkPhase, weapon: function (ctx, r) {
-        if (def.role === "melee" || def.role === "heavy") { ctx.strokeStyle = lighten(body, .3); ctx.lineWidth = Math.max(3, r * 0.22); ctx.lineCap = "round"; var reach = (def.role === "heavy") ? r * 1.4 : r * 1.7; if (e.windT > 0) reach *= 1.15; ctx.beginPath(); ctx.moveTo(r * 0.5, r * 0.2); ctx.lineTo(reach, r * 0.2); ctx.stroke(); ctx.lineCap = "butt"; }
-        else { ctx.strokeStyle = lighten(body, .3); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(r * 0.8, 0, r * 0.6, -0.9, 0.9); ctx.stroke(); }
-      }
-    });
-    ctx.strokeStyle = rank.ring; ctx.lineWidth = 2; ctx.globalAlpha = 0.9; ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 4, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1;
-    for (var i = 0; i < e.rank; i++) { ctx.fillStyle = rank.ring; ctx.beginPath(); ctx.arc(e.x - (e.rank - 1) * 4 + i * 8, e.y - e.r - 12, 2.6, 0, TAU); ctx.fill(); }
-    if (e.hp < e.maxHp) { var w = e.r * 2.2, hx = e.x - w / 2, hy = e.y - e.r - 8; ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(hx, hy, w, 4); ctx.fillStyle = "#c0392b"; ctx.fillRect(hx, hy, w * (e.hp / e.maxHp), 4); }
+  var OL = "#0a0806";
+  // detailed chibi pixel humanoid centred at (cx,cy); flips horizontally; tinted by opts.
+  function pxHumanoid(ctx, cx, cy, r, flip, o) {
+    o = o || {};
+    var GW = 16, GH = 18, ps = r * (o.scale || 2.5) / GH;
+    var footY = cy + r * 0.92, ox = cx - GW * ps / 2, oy = footY - GH * ps;
+    function P(gx, gy, w, h, col) { if (!col) return; var fx = flip ? (GW - gx - w) : gx; ctx.fillStyle = col; ctx.fillRect(Math.round(ox + fx * ps), Math.round(oy + gy * ps), Math.ceil(w * ps), Math.ceil(h * ps)); }
+    function glow(gx, gy, w, h, col) { ctx.save(); ctx.shadowColor = col; ctx.shadowBlur = 5 * ps; P(gx, gy, w, h, col); ctx.restore(); }
+    function fc(c) { return (o.flash && c) ? lighten(c, o.flash) : c; }
+    var skin = fc(o.skin || "#e6b892"), skinS = fc(darken(o.skin || "#e6b892", .28));
+    var arm = fc(o.armor || "#6b6257"), armH = fc(lighten(o.armor || "#6b6257", .34)), armS = fc(darken(o.armor || "#6b6257", .48));
+    var pants = fc(o.pants || darken(o.armor || "#6b6257", .35)), pantsS = fc(darken(o.pants || darken(o.armor || "#6b6257", .35), .3));
+    var boots = fc(o.boots || "#241a10"), trim = fc(o.trim || "#c8a862"), hair = fc(o.hair || "#5a3a22");
+
+    if (o.aura) ringGlow(ctx, cx, cy, r * (o.scale ? o.scale * 0.75 : 1.9), toRGBA(o.aura, .2));
+    ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.beginPath(); ctx.ellipse(cx, footY, r * 0.82, r * 0.3, 0, 0, TAU); ctx.fill();
+
+    // cape behind
+    if (o.cape) { var cp = fc(o.cape); P(3, 6, 10, 8, darken(cp, .18)); P(3, 6, 2, 9, darken(cp, .32)); P(11, 6, 2, 9, darken(cp, .32)); P(4, 14, 8, 1, darken(cp, .5)); }
+    if (o.wings) { var wg = fc(o.wings); P(1, 5, 3, 6, toRGBA(wg, .55)); P(12, 5, 3, 6, toRGBA(wg, .55)); }
+
+    // legs
+    P(5, 13, 3, 4, pants); P(4, 13, 1, 4, OL); P(5, 13, 1, 4, lighten(pants, .12));
+    P(8, 13, 3, 4, pantsS); P(11, 13, 1, 4, OL);
+    P(5, 16, 3, 2, boots); P(8, 16, 3, 2, boots); P(4, 17, 8, 1, OL);
+
+    // back arm
+    P(3, 8, 1, 4, armS); P(2, 8, 1, 4, OL); P(3, 12, 1, 1, skin);
+
+    // torso
+    P(4, 7, 8, 6, arm); P(4, 7, 1, 6, armH); P(11, 7, 1, 6, armS); P(4, 6, 8, 1, OL);
+    P(4, 12, 8, 1, trim);                                     // belt
+    if (o.emblem !== false) { P(7, 8, 2, 3, darken(trim, .15)); P(7, 8, 1, 3, trim); }
+
+    // front arm + pauldrons
+    P(12, 8, 1, 4, arm); P(13, 8, 1, 4, OL); P(12, 12, 1, 1, skin);
+    if (o.pauldrons) { P(2, 6, 3, 2, lighten(arm, .2)); P(2, 6, 1, 2, OL); P(2, 8, 3, 1, OL); P(11, 6, 3, 2, lighten(arm, .2)); P(13, 6, 1, 2, OL); P(11, 8, 3, 1, OL); }
+
+    // ===== head =====
+    P(5, 1, 6, 6, skin); P(4, 2, 1, 4, skinS); P(11, 2, 1, 4, skinS);
+    P(5, 0, 6, 1, OL); P(4, 1, 1, 1, OL); P(11, 1, 1, 1, OL); P(4, 6, 1, 1, OL); P(11, 6, 1, 1, OL);
+    var ht = o.headType || "hair";
+    if (ht === "helm") {
+      P(4, 1, 8, 4, arm); P(4, 1, 1, 4, armH); P(11, 1, 1, 4, armS); P(4, 0, 8, 1, OL); P(3, 1, 1, 4, OL); P(12, 1, 1, 4, OL);
+      P(5, 5, 6, 1, armS); P(5, 4, 6, 1, "#050505"); glow(6, 4, 1, 1, o.eye || "#e0402a"); glow(9, 4, 1, 1, o.eye || "#e0402a");
+      if (o.crest !== false) { P(7, -1, 2, 2, trim); }
+    } else if (ht === "hood") {
+      var hd = fc(o.headCol || "#3a3550");
+      P(4, 0, 8, 6, hd); P(5, -1, 6, 1, darken(hd, .2)); P(4, 0, 1, 6, lighten(hd, .12)); P(11, 0, 1, 6, darken(hd, .42));
+      P(3, 1, 1, 5, OL); P(12, 1, 1, 5, OL); P(4, -1, 8, 1, OL);
+      P(5, 3, 6, 3, "#0b0a12"); glow(6, 4, 1, 1, o.eye || "#c9e37a"); glow(9, 4, 1, 1, o.eye || "#c9e37a");
+      P(4, 6, 8, 1, darken(hd, .3));
+    } else if (ht === "skull") {
+      P(5, 3, 2, 2, "#161210"); P(9, 3, 2, 2, "#161210"); glow(6, 4, 1, 1, o.eye || "#b9d24a"); glow(9, 4, 1, 1, o.eye || "#b9d24a");
+      P(6, 6, 4, 1, "#161210"); P(7, 6, 1, 1, skin); P(9, 6, 1, 1, skin);
+      if (o.hood) { var hh = fc(o.headCol || "#3a3a2a"); P(4, 0, 8, 2, hh); P(3, 1, 1, 4, hh); P(12, 1, 1, 4, hh); P(4, -1, 8, 1, OL); }
+    } else {
+      P(6, 3, 1, 2, "#f4efe4"); P(9, 3, 1, 2, "#f4efe4"); P(6, 4, 1, 1, o.eye || "#4a3fa0"); P(9, 4, 1, 1, o.eye || "#4a3fa0"); P(7, 6, 2, 1, skinS);
+      P(4, 0, 8, 2, hair); P(4, 0, 1, 3, hair); P(11, 0, 1, 3, hair); P(5, 2, 2, 1, hair); P(9, 2, 2, 1, hair); P(4, -1, 8, 1, OL);
+      if (o.longHair) { P(2, 2, 2, 8, hair); P(2, 2, 1, 8, darken(hair, .3)); P(12, 2, 2, 7, hair); P(13, 2, 1, 7, darken(hair, .3)); }
+    }
+    if (o.horns) { P(3, -1, 2, 2, "#20160f"); P(3, -2, 1, 1, "#20160f"); P(11, -1, 2, 2, "#20160f"); P(12, -2, 1, 1, "#20160f"); }
+
+    // ===== weapon (front hand) =====
+    if (o.weapon && o.weapon.type && o.weapon.type !== "none") pxWeapon(P, glow, o.weapon, trim);
+  }
+
+  function pxWeapon(P, glow, w, trim) {
+    var c = w.col || "#c3c8cf", cl = lighten(c, .5), cs = darken(c, .5), wood = "#5a4326";
+    if (w.type === "greatsword") {
+      P(12, -2, 3, 12, c); P(12, -2, 1, 12, cl); P(14, -1, 1, 11, cs); P(13, -3, 1, 1, "#fff"); P(12, -3, 3, 1, OL);
+      P(11, 10, 5, 1, trim); P(13, 11, 1, 3, wood); P(13, 14, 1, 1, trim);
+    } else if (w.type === "sword") {
+      P(13, 1, 1, 8, c); P(13, 1, 1, 8, cl); P(14, 2, 1, 6, cs); P(13, 0, 1, 1, "#fff"); P(12, 9, 3, 1, trim); P(13, 10, 1, 3, wood); P(13, 13, 1, 1, trim);
+    } else if (w.type === "dagger") {
+      P(13, 5, 1, 5, c); P(14, 6, 1, 3, cs); P(12, 10, 3, 1, trim); P(13, 11, 1, 2, wood);
+    } else if (w.type === "bow") {
+      P(14, 1, 1, 2, wood); P(13, 3, 1, 2, wood); P(12, 5, 1, 3, wood); P(13, 8, 1, 2, wood); P(14, 10, 1, 2, wood);
+      P(11, 8, 4, 1, wood); P(10, 8, 1, 1, cl);              // nocked arrow
+    } else if (w.type === "staff") {
+      P(13, 2, 1, 11, wood); P(13, 13, 1, 1, darken(wood, .3));
+      var g = w.col || "#8fd0ff"; glow(12, -1, 3, 3, g); P(13, 0, 1, 1, "#fff"); P(12, -1, 1, 1, lighten(g, .4));
+    } else if (w.type === "club") {
+      P(12, 3, 4, 7, wood); P(12, 3, 1, 7, lighten(wood, .22)); P(15, 3, 1, 7, darken(wood, .35)); P(12, 2, 4, 1, OL);
+      P(11, 5, 1, 1, "#2a1c10"); P(15, 7, 1, 1, "#2a1c10"); P(13, 10, 1, 2, wood);
+    } else if (w.type === "twin") {
+      P(13, 2, 1, 7, c); P(14, 3, 1, 5, cs); P(11, 4, 1, 6, c); P(10, 5, 1, 4, cs);
+    }
+  }
+  G.pxHumanoid = pxHumanoid;
+
+  // shared hero look (used by battle sprite AND home portrait) reflecting equipped gear
+  function heroOpts(cls, chest, helm, wpnC, wtype) {
+    var o = {};
+    if (cls === "melee") {
+      o.skin = "#f0c49a"; o.hair = "#d8353b"; o.longHair = true; o.eye = "#5a6fd0";
+      o.armor = (chest === "#6b6257") ? "#cfd3db" : chest; o.pants = "#454a54"; o.trim = "#e6c464"; o.pauldrons = true; o.cape = "#7c1622";
+      o.weapon = { type: wtype === "melee" ? "greatsword" : wtype === "ranged" ? "bow" : "staff", col: wpnC };
+    } else if (cls === "ranged") {
+      o.skin = "#ecbd90"; o.headType = "hood"; o.headCol = (helm && helm !== "#6b6257") ? helm : "#2c4a30";
+      o.armor = (chest === "#6b6257") ? "#5a4326" : chest; o.pants = "#3a2f22"; o.trim = "#9a7a3a"; o.cape = "#27412c"; o.eye = "#c9e37a";
+      o.weapon = { type: wtype === "ranged" ? "bow" : wtype === "magic" ? "staff" : "sword", col: wtype === "ranged" ? wpnC : "#8a6a3a" };
+    } else {
+      o.headType = "hood"; o.headCol = (helm && helm !== "#6b6257") ? helm : "#332e5e"; o.eye = (wtype === "magic") ? wpnC : "#8fd0ff";
+      o.armor = (chest === "#6b6257") ? "#342f66" : chest; o.pants = o.armor; o.trim = "#c8a862";
+      o.weapon = { type: wtype === "magic" ? "staff" : wtype === "ranged" ? "bow" : "sword", col: (wtype === "magic") ? wpnC : "#8fd0ff" };
+    }
+    return o;
+  }
+  // ---------- hero (player) ----------
+  G.drawHeroTop = function (ctx, p) {
+    var chest = eqColor("chest", "#6b6257"), helm = G.getEquipped("helmet") ? eqColor("helmet", null) : null;
+    var rw = G.getEquipped("right"), wpnC = rw ? ITEMS[rw.id].color : "#c3c8cf", wtype = rw ? ITEMS[rw.id].type : "melee";
+    var o = heroOpts(G.state.cls, chest, helm, wpnC, wtype); o.scale = 2.55;
+    pxHumanoid(ctx, p.x, p.y, p.r, Math.cos(p.facing) < 0, o);
   };
 
+  // ---------- enemies ----------
+  var ENEMY_CFG = {
+    soldier: { skin: "#9db07a", headType: "skull", armor: "#5f6a4a", pants: "#39402a", trim: "#7d5a2a", eye: "#c9e37a", weapon: { type: "sword", col: "#8f9480" } },
+    archer:  { skin: "#9db0a0", headType: "skull", hood: true, headCol: "#38473f", armor: "#48584e", pants: "#29342e", trim: "#5a6a5a", eye: "#a8e0c0", weapon: { type: "bow", col: "#6a5a3a" } },
+    knight:  { skin: "#c9ccd4", headType: "helm", pants: "#3a3f47", trim: "#8a7a4a", pauldrons: true, eye: "#e0402a", cape: "#38202e", weapon: { type: "sword", col: "#c2c8d2" } },
+    giant:   { skin: "#8a7a62", headType: "hair", hair: "#463626", pants: "#463626", trim: "#6a4a2a", pauldrons: true, eye: "#e0a040", weapon: { type: "club", col: "#5a4326" }, scale: 3.05, emblem: false },
+    cultist: { headType: "hood", trim: "#7a5ab0", eye: "#d060ff", weapon: { type: "staff", col: "#c07add" } }
+  };
+  G.drawEnemyTop = function (ctx, e) {
+    var def = G.ENEMIES[e.type], rank = G.RANKS[e.rank];
+    var flip = Math.cos(e.facing) < 0;
+    var flash = e.hitT > 0 ? 0.55 : (e.windT > 0 ? 0.28 + 0.2 * Math.max(0, Math.sin(Date.now() / 55)) : 0);
+    var o = {}, cfg = ENEMY_CFG[e.type] || ENEMY_CFG.soldier;
+    for (var k in cfg) if (cfg.hasOwnProperty(k)) o[k] = cfg[k];
+    o.flash = flash; o.scale = o.scale || 2.5;
+    if (e.type === "knight") o.armor = def.color;
+    if (e.type === "cultist") { o.headCol = def.color; o.armor = darken(def.color, .28); o.pants = darken(def.color, .4); }
+    pxHumanoid(ctx, e.x, e.y, e.r, flip, o);
+    // rank ring + pips
+    ctx.strokeStyle = rank.ring; ctx.lineWidth = 2; ctx.globalAlpha = 0.8; ctx.beginPath(); ctx.ellipse(e.x, e.y + e.r * 0.9, e.r * 0.82, e.r * 0.3, 0, 0, TAU); ctx.stroke(); ctx.globalAlpha = 1;
+    for (var i = 0; i < e.rank; i++) { ctx.fillStyle = rank.ring; ctx.beginPath(); ctx.arc(e.x - (e.rank - 1) * 4 + i * 8, e.y - e.r * 1.7, 2.6, 0, TAU); ctx.fill(); }
+    if (e.hp < e.maxHp) { var w = e.r * 2.0, hx = e.x - w / 2, hy = e.y - e.r * 1.95; ctx.fillStyle = "rgba(0,0,0,.6)"; ctx.fillRect(hx, hy, w, 4); ctx.fillStyle = "#c0392b"; ctx.fillRect(hx, hy, w * (e.hp / e.maxHp), 4); }
+  };
+
+  // ---------- bosses ----------
+  var BOSS_CFG = {
+    godrik:    { headType: "helm", pants: "#3a3f47", trim: "#c8a862", pauldrons: true, eye: "#e0402a", cape: "#3a2030", weapon: { type: "greatsword", col: "#dfe4ea" } },
+    malenketh: { skin: "#e8d0a0", headType: "hair", hair: "#caa94a", longHair: true, pants: "#4a4020", trim: "#8fbf4a", eye: "#9fe04a", cape: "#3a4a1e", weapon: { type: "twin", col: "#e0d28a" } },
+    radaghast: { headType: "hood", trim: "#c9c0f5", eye: "#c9c0f5", aura: "#8a7fd6", weapon: { type: "staff", col: "#b3a6ff" } },
+    grafted:   { skin: "#8a7358", headType: "hair", hair: "#3a2c1c", pants: "#3a2c1c", trim: "#6a4a2a", pauldrons: true, eye: "#e0a040", weapon: { type: "club", col: "#5a4326" }, scale: 3.1, emblem: false },
+    mohgwyn:   { skin: "#d8a0a0", headType: "hair", hair: "#3a1420", horns: true, pants: "#5a2030", trim: "#e0b040", eye: "#ff5a5a", aura: "#a03040", cape: "#7a1020", weapon: { type: "twin", col: "#e05a6a" } }
+  };
   G.drawBossTop = function (ctx, b) {
-    var r = b.r, x = b.x, y = b.y;
-    ctx.fillStyle = "rgba(0,0,0,.5)"; ctx.beginPath(); ctx.ellipse(x, y + r * 0.5, r * 1.15, r * 0.6, 0, 0, TAU); ctx.fill();
-    var flash = b.hitT > 0 ? lighten(b.color, .5) : b.color;
-    ctx.save(); ctx.translate(x, y); ctx.rotate(b.facing);
-    ctx.fillStyle = shade(ctx, 0, 0, r, lighten(flash, .2), darken(flash, .5)); ctx.strokeStyle = "rgba(0,0,0,.6)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill(); ctx.stroke();
-    if (b.id === "godrik" || b.id === "grafted") { ctx.fillStyle = darken(flash, .7); ctx.beginPath(); ctx.arc(0, -r * 0.8, r * 0.5, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.arc(0, r * 0.8, r * 0.5, 0, TAU); ctx.fill(); ctx.strokeStyle = "#cfd4da"; ctx.lineWidth = r * 0.28; ctx.lineCap = "round"; var reach = r * (b.windT > 0 ? 2.4 : 2.0); ctx.beginPath(); ctx.moveTo(r * 0.6, r * 0.3); ctx.lineTo(reach, r * 0.3); ctx.stroke(); ctx.lineCap = "butt"; }
-    else if (b.id === "malenketh") { ctx.strokeStyle = "#e0d28a"; ctx.lineWidth = r * 0.16; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(r * 0.4, -r * 0.2); ctx.lineTo(r * 2.1, -r * 0.4); ctx.stroke(); ctx.strokeStyle = "rgba(150,200,80,.5)"; ctx.beginPath(); ctx.moveTo(r * 0.4, r * 0.2); ctx.lineTo(r * 2.0, r * 0.5); ctx.stroke(); ctx.lineCap = "butt"; }
-    else if (b.id === "radaghast") { ctx.fillStyle = "rgba(138,127,214,.35)"; ctx.shadowColor = "#8a7fd6"; ctx.shadowBlur = 24; ctx.beginPath(); ctx.arc(r * 0.9, 0, r * 0.4, 0, TAU); ctx.fill(); ctx.shadowBlur = 0; for (var i = 0; i < 4; i++) { var a = i / 4 * TAU + Date.now() / 800; ctx.fillStyle = "#c9c0f5"; ctx.beginPath(); ctx.arc(Math.cos(a) * r * 1.3, Math.sin(a) * r * 1.3, 3, 0, TAU); ctx.fill(); } }
-    else { ctx.strokeStyle = "#e05a6a"; ctx.lineWidth = r * 0.18; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(r * 0.5, 0); ctx.lineTo(r * 2.1, 0); ctx.stroke(); ctx.lineCap = "butt"; ctx.fillStyle = "rgba(160,48,64,.3)"; ctx.beginPath(); ctx.arc(0, 0, r * 1.3, 0, TAU); ctx.fill(); }
-    ctx.fillStyle = "#e7cf95"; ctx.beginPath(); ctx.arc(r * 0.5, -r * 0.18, 3.4, 0, TAU); ctx.arc(r * 0.5, r * 0.18, 3.4, 0, TAU); ctx.fill();
-    ctx.restore();
-    if (b.hp / b.maxHp < 0.35) ringGlow(ctx, x, y, r * 2, "rgba(192,57,43,.18)");
+    var flip = Math.cos(b.facing) < 0;
+    var flash = b.hitT > 0 ? 0.55 : (b.windT > 0 ? 0.35 : 0);
+    var o = {}, cfg = BOSS_CFG[b.id] || BOSS_CFG.godrik;
+    for (var k in cfg) if (cfg.hasOwnProperty(k)) o[k] = cfg[k];
+    o.flash = flash; o.scale = o.scale || 2.75; o.armor = o.armor || b.color;
+    pxHumanoid(ctx, b.x, b.y, b.r, flip, o);
+    if (b.hp / b.maxHp < 0.35) ringGlow(ctx, b.x, b.y, b.r * 1.9, "rgba(192,57,43,.2)");
+    // boss name handled by HUD bar
   };
 
   // ============================================================
@@ -490,9 +550,9 @@
   }
   function iconKind(def) {
     if (def.slot === "weapon") {
-      if (def.type === "melee") return "sword";
-      if (def.type === "ranged") return /pistol|gun|musket|cannon/.test(def.id) ? "pistol" : "bow";
-      if (def.type === "magic") return "wand";
+      if (def.type === "melee") return /katana|blood|curved/.test(def.id) ? "katana" : "sword";
+      if (def.type === "ranged") return /pistol|gun|musket|cannon|ashen/.test(def.id) ? "pistol" : "bow";
+      if (def.type === "magic") return /frost|ice|glacial/.test(def.id) ? "wandfrost" : "wand";
     }
     if (def.type === "shield") return /tome|book|grimoire/.test(def.id) ? "tome" : "shield";
     if (def.type === "ring") return "ring";
@@ -533,6 +593,20 @@
     pcell(c, 6, 4, P.g); pcell(c, 10, 4, P.g); pcell(c, 7, 3, P.g); pcell(c, 9, 3, P.g); // claw setting
     pdisc(c, 8, 3, 2, P.x); pcell(c, 7, 2, P.X); pcell(c, 8, 1, P.X); // gem
     pcell(c, 11, 2, P.X); pcell(c, 5, 6, P.X); // sparkles
+  }
+  function pxKatana(c, P) {
+    var b = [[12, 1], [11, 2], [11, 3], [10, 4], [10, 5], [9, 6], [9, 7], [8, 8]];   // curved single-edge blade
+    for (var i = 0; i < b.length; i++) { pcell(c, b[i][0] - 1, b[i][1], P.o); pcell(c, b[i][0], b[i][1], P.l); pcell(c, b[i][0] + 1, b[i][1], P.d); }
+    pcell(c, 13, 0, P.l); pcell(c, 12, 0, P.o); pcell(c, 13, 1, P.d);                // tip
+    pcell(c, 7, 8, P.g); pcell(c, 8, 9, P.g); pcell(c, 9, 8, P.g); pcell(c, 8, 7, P.g); pcell(c, 8, 8, P.G); // tsuba
+    pcell(c, 6, 9, P.e); pcell(c, 6, 10, P.W); pcell(c, 5, 11, P.e); pcell(c, 5, 12, P.W); pcell(c, 4, 13, P.e); pcell(c, 3, 14, P.o); // handle
+  }
+  function pxWandFrost(c, P) {
+    pv(c, 8, 6, 14, P.w); pv(c, 9, 6, 14, P.W); pcell(c, 8, 15, P.W);               // shaft
+    pcell(c, 7, 5, P.g); pcell(c, 9, 5, P.g);                                        // setting
+    pcell(c, 8, 0, P.X); pv(c, 8, 1, 4, P.x); pcell(c, 8, 2, P.X);                   // vertical shard
+    pcell(c, 7, 3, P.x); pcell(c, 9, 3, P.x); pcell(c, 7, 4, P.x); pcell(c, 9, 4, P.x);
+    pcell(c, 6, 4, P.x); pcell(c, 10, 4, P.x); pcell(c, 6, 3, P.X); pcell(c, 7, 2, P.X);
   }
   function pxShield(c, P) {
     ph(c, 1, 4, 11, P.o);
@@ -602,9 +676,11 @@
     var gem = (kind === "wand" || kind === "ring" || kind === "talisman") ? col : null;
     var P = pxPal(col, gem);
     if (kind === "sword") pxSword(ctx, P);
+    else if (kind === "katana") pxKatana(ctx, P);
     else if (kind === "bow") pxBow(ctx, P);
     else if (kind === "pistol") pxPistol(ctx, P);
     else if (kind === "wand") pxWand(ctx, P);
+    else if (kind === "wandfrost") pxWandFrost(ctx, P);
     else if (kind === "shield") pxShield(ctx, P);
     else if (kind === "tome") pxTome(ctx, P);
     else if (kind === "helm") pxHelm(ctx, P);
@@ -619,17 +695,48 @@
   // ============================================================
   // CHEST
   // ============================================================
+  // pixel treasure chest (16x14 grid), closed or open with inner glow
+  function pxChest(ctx, ox, oy, ps, open) {
+    function P(gx, gy, w, h, col) { if (!col) return; ctx.fillStyle = col; ctx.fillRect(Math.round(ox + gx * ps), Math.round(oy + gy * ps), Math.ceil(w * ps), Math.ceil(h * ps)); }
+    var wood = "#7a4a24", woodH = "#9c6a34", woodS = "#4a2c14", iron = "#39322e", ironH = "#5c524a", gold = "#c8a862", goldH = "#e9d29a", ol = "#160d07";
+    // body
+    P(3, 7, 10, 6, wood); P(3, 7, 10, 1, woodH); P(3, 12, 10, 1, woodS); P(3, 7, 1, 6, woodS); P(12, 7, 1, 6, woodH);
+    P(2, 7, 1, 6, ol); P(13, 7, 1, 6, ol); P(3, 13, 10, 1, ol);
+    P(5, 7, 1, 6, ironS(iron)); P(10, 7, 1, 6, iron); P(5, 7, 1, 1, ironH); P(10, 7, 1, 1, ironH);
+    if (open) {
+      var g = ctx.createRadialGradient(ox + 8 * ps, oy + 5 * ps, ps, ox + 8 * ps, oy + 5 * ps, 11 * ps);
+      g.addColorStop(0, "rgba(233,207,149,.85)"); g.addColorStop(1, "rgba(233,207,149,0)");
+      ctx.fillStyle = g; ctx.fillRect(ox - 2 * ps, oy - 5 * ps, 20 * ps, 14 * ps);
+      P(4, 5, 8, 2, goldH); P(4, 6, 8, 1, gold);                                   // spilling treasure
+      P(3, 0, 10, 2, wood); P(3, 0, 10, 1, woodH); P(2, 0, 1, 2, ol); P(13, 0, 1, 2, ol); P(3, 2, 10, 1, woodS); // open lid (back)
+      P(5, 0, 1, 2, iron); P(10, 0, 1, 2, iron);
+    } else {
+      P(4, 2, 8, 1, ol); P(3, 3, 10, 4, wood); P(3, 3, 10, 1, woodH); P(2, 3, 1, 4, ol); P(13, 3, 1, 4, ol); // lid
+      P(5, 3, 1, 4, iron); P(10, 3, 1, 4, iron); P(3, 6, 10, 1, woodS);
+      P(7, 5, 2, 4, gold); P(7, 5, 2, 1, goldH); P(7, 7, 2, 1, woodS); P(8, 6, 1, 2, ol); // lock plate
+    }
+  }
+  function ironS(c) { return darken(c, .25); }
+
   G.drawChest = function (canvas, open) {
-    var ctx = canvas.getContext("2d"), W = canvas.width, H = canvas.height; ctx.clearRect(0, 0, W, H);
-    var cx = W / 2, cy = H * 0.62, s = W / 150; ctx.save(); ctx.translate(cx, cy); ctx.scale(s, s);
-    ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.beginPath(); ctx.ellipse(0, 44, 52, 12, 0, 0, TAU); ctx.fill();
-    if (open) { var g = ctx.createRadialGradient(0, -6, 6, 0, -6, 70); g.addColorStop(0, "rgba(233,207,149,.9)"); g.addColorStop(1, "rgba(233,207,149,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, -6, 70, 0, TAU); ctx.fill(); }
-    ctx.fillStyle = "#5a3f22"; ctx.strokeStyle = "#2a1c10"; ctx.lineWidth = 3; ctx.beginPath(); ctx.rect(-46, -4, 92, 46); ctx.fill(); ctx.stroke();
-    ctx.strokeStyle = "#c8a862"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(0, 42); ctx.stroke(); ctx.strokeRect(-46, -4, 92, 46);
-    ctx.save(); ctx.translate(0, -4); if (open) ctx.rotate(-0.6);
-    ctx.fillStyle = "#6b4a28"; ctx.strokeStyle = "#2a1c10"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-46, 0); ctx.lineTo(-46, -18); ctx.quadraticCurveTo(0, -40, 46, -18); ctx.lineTo(46, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.strokeStyle = "#c8a862"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-46, -8); ctx.quadraticCurveTo(0, -30, 46, -8); ctx.stroke(); ctx.restore();
-    ctx.fillStyle = "#c8a862"; ctx.fillRect(-7, 2, 14, 12); ctx.restore();
+    var ctx = canvas.getContext("2d"), W = canvas.width, H = canvas.height; ctx.clearRect(0, 0, W, H); ctx.imageSmoothingEnabled = false;
+    var ps = Math.max(3, Math.floor(W / 20)), cw = 16 * ps, ch = 14 * ps;
+    var ox = Math.round((W - cw) / 2), oy = Math.round((H - ch) / 2 + (open ? ps : 0));
+    ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.beginPath(); ctx.ellipse(W / 2, oy + 13 * ps, cw * 0.5, ps * 1.6, 0, 0, TAU); ctx.fill();
+    pxChest(ctx, ox, oy, ps, open);
+  };
+
+  // in-world arena chest; t = time for the idle pulse
+  G.drawChestWorld = function (ctx, x, y, r, open, t) {
+    var ps = r / 7, ox = x - 8 * ps, oy = y - 8 * ps;
+    ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.beginPath(); ctx.ellipse(x, y + 5.5 * ps, r * 0.75, r * 0.28, 0, 0, TAU); ctx.fill();
+    if (!open) {
+      var f = 0.55 + 0.45 * Math.sin((t || 0) * 4);
+      ringGlow(ctx, x, y, r * (1.5 + 0.25 * f), toRGBA("#e9cf95", 0.10 + 0.10 * f));
+      var ay = y - 10 * ps - Math.abs(Math.sin((t || 0) * 3)) * 3 * ps;            // bobbing marker
+      ctx.fillStyle = "#e9d29a"; ctx.beginPath(); ctx.moveTo(x, ay + 4); ctx.lineTo(x - 4, ay - 2); ctx.lineTo(x + 4, ay - 2); ctx.closePath(); ctx.fill();
+    }
+    pxChest(ctx, ox, oy, ps, open);
   };
 
 })(window);
