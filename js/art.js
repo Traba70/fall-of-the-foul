@@ -335,89 +335,129 @@
   // detailed chibi pixel humanoid centred at (cx,cy); flips horizontally; tinted by opts.
   function pxHumanoid(ctx, cx, cy, r, flip, o) {
     o = o || {};
-    var GW = 16, GH = 18, ps = r * (o.scale || 2.5) / GH;
+    var GW = 32, GH = 36, ps = r * (o.scale || 2.5) / GH;                 // 2x resolution grid
     var footY = cy + r * 0.92, ox = cx - GW * ps / 2, oy = footY - GH * ps;
     function P(gx, gy, w, h, col) { if (!col) return; var fx = flip ? (GW - gx - w) : gx; ctx.fillStyle = col; ctx.fillRect(Math.round(ox + fx * ps), Math.round(oy + gy * ps), Math.ceil(w * ps), Math.ceil(h * ps)); }
-    function glow(gx, gy, w, h, col) { ctx.save(); ctx.shadowColor = col; ctx.shadowBlur = 5 * ps; P(gx, gy, w, h, col); ctx.restore(); }
+    function glow(gx, gy, w, h, col) { ctx.save(); ctx.shadowColor = col; ctx.shadowBlur = 8 * ps; P(gx, gy, w, h, col); ctx.restore(); }
     function fc(c) { return (o.flash && c) ? lighten(c, o.flash) : c; }
-    var skin = fc(o.skin || "#e6b892"), skinS = fc(darken(o.skin || "#e6b892", .28));
-    var arm = fc(o.armor || "#6b6257"), armH = fc(lighten(o.armor || "#6b6257", .34)), armS = fc(darken(o.armor || "#6b6257", .48));
-    var pants = fc(o.pants || darken(o.armor || "#6b6257", .35)), pantsS = fc(darken(o.pants || darken(o.armor || "#6b6257", .35), .3));
-    var boots = fc(o.boots || "#241a10"), trim = fc(o.trim || "#c8a862"), hair = fc(o.hair || "#5a3a22");
+    var sk0 = o.skin || "#e6b892";
+    var skin = fc(sk0), skinH = fc(lighten(sk0, .17)), skinS = fc(darken(sk0, .26)), skinD = fc(darken(sk0, .5));
+    var A0 = o.armor || "#6b6257";
+    var arm = fc(A0), armH = fc(lighten(A0, .36)), armS = fc(darken(A0, .4)), armD = fc(darken(A0, .62));
+    var Pp = o.pants || darken(A0, .35);
+    var pants = fc(Pp), pantsH = fc(lighten(Pp, .2)), pantsS = fc(darken(Pp, .32));
+    var boots = fc(o.boots || "#241a10"), bootsH = fc(lighten(o.boots || "#241a10", .3));
+    var T0 = o.trim || "#c8a862";
+    var trim = fc(T0), trimH = fc(lighten(T0, .35)), trimS = fc(darken(T0, .35));
+    var hair = fc(o.hair || "#5a3a22"), hairH = fc(lighten(o.hair || "#5a3a22", .3)), hairS = fc(darken(o.hair || "#5a3a22", .35));
 
     if (o.aura) ringGlow(ctx, cx, cy, r * (o.scale ? o.scale * 0.75 : 1.9), toRGBA(o.aura, .2));
     ctx.fillStyle = "rgba(0,0,0,.4)"; ctx.beginPath(); ctx.ellipse(cx, footY, r * 0.82, r * 0.3, 0, 0, TAU); ctx.fill();
 
-    // cape behind
-    if (o.cape) { var cp = fc(o.cape); P(3, 6, 10, 8, darken(cp, .18)); P(3, 6, 2, 9, darken(cp, .32)); P(11, 6, 2, 9, darken(cp, .32)); P(4, 14, 8, 1, darken(cp, .5)); }
-    if (o.wings) { var wg = fc(o.wings); P(1, 5, 3, 6, toRGBA(wg, .55)); P(12, 5, 3, 6, toRGBA(wg, .55)); }
+    // ===== cape / wings (behind) =====
+    if (o.cape) { var cp = fc(o.cape), cpS = darken(o.cape, .34), cpD = darken(o.cape, .55);
+      P(7, 13, 18, 17, darken(cp, .16)); P(6, 15, 2, 15, cpS); P(24, 15, 2, 15, cpS);
+      P(11, 16, 1, 13, cpD); P(20, 16, 1, 13, cpD);
+      P(7, 29, 3, 2, cpS); P(13, 29, 3, 3, cpD); P(19, 29, 3, 2, cpS); P(9, 30, 1, 1, OL); P(22, 30, 1, 1, OL); }
+    if (o.wings) { var wg = fc(o.wings); P(2, 9, 5, 13, toRGBA(wg, .5)); P(1, 12, 2, 7, toRGBA(wg, .6)); P(25, 9, 5, 13, toRGBA(wg, .5)); P(29, 12, 2, 7, toRGBA(wg, .6)); }
 
-    // legs
-    P(5, 13, 3, 4, pants); P(4, 13, 1, 4, OL); P(5, 13, 1, 4, lighten(pants, .12));
-    P(8, 13, 3, 4, pantsS); P(11, 13, 1, 4, OL);
-    P(5, 16, 3, 2, boots); P(8, 16, 3, 2, boots); P(4, 17, 8, 1, OL);
+    // ===== legs =====
+    P(10, 27, 6, 8, pants); P(10, 27, 1, 8, pantsH); P(15, 27, 1, 8, pantsS); P(9, 27, 1, 9, OL); P(16, 28, 1, 7, OL);
+    P(10, 31, 6, 1, darken(Pp, .2));
+    P(9, 33, 7, 3, boots); P(9, 33, 7, 1, bootsH); P(9, 35, 7, 1, OL);
+    P(17, 27, 6, 8, pantsS); P(17, 27, 1, 8, pants); P(22, 27, 1, 8, OL);
+    P(17, 31, 6, 1, darken(Pp, .26));
+    P(16, 33, 7, 3, boots); P(16, 33, 7, 1, bootsH); P(16, 35, 7, 1, OL);
 
-    // back arm
-    P(3, 8, 1, 4, armS); P(2, 8, 1, 4, OL); P(3, 12, 1, 1, skin);
+    // ===== back arm =====
+    P(6, 16, 3, 10, armS); P(5, 16, 1, 10, OL); P(6, 26, 3, 2, skin); P(6, 26, 3, 1, skinH); P(6, 27, 3, 1, skinS);
 
-    // torso
-    P(4, 7, 8, 6, arm); P(4, 7, 1, 6, armH); P(11, 7, 1, 6, armS); P(4, 6, 8, 1, OL);
-    P(4, 12, 8, 1, trim);                                     // belt
-    if (o.emblem !== false) { P(7, 8, 2, 3, darken(trim, .15)); P(7, 8, 1, 3, trim); }
+    // ===== torso =====
+    P(8, 15, 16, 12, arm); P(8, 15, 2, 12, armH); P(22, 15, 2, 12, armS); P(8, 14, 16, 1, OL); P(7, 15, 1, 12, OL); P(24, 15, 1, 12, OL); P(8, 27, 16, 1, OL);
+    P(15, 16, 2, 10, darken(A0, .22)); P(16, 16, 1, 9, armH);            // central seam + gleam
+    P(10, 16, 6, 1, lighten(A0, .16)); P(18, 16, 4, 1, lighten(A0, .16)); // upper-chest light
+    P(10, 15, 1, 1, armD); P(21, 15, 1, 1, armD); P(10, 24, 1, 1, armD); P(21, 24, 1, 1, armD); // rivets
+    P(11, 15, 10, 1, trim); P(11, 14, 10, 1, trimS);                     // collar
+    P(8, 25, 16, 2, trim); P(8, 25, 16, 1, trimH); P(14, 25, 3, 2, trimS); P(15, 25, 1, 1, darken(T0, .55)); // belt + buckle
+    if (o.emblem !== false) { P(14, 18, 4, 5, darken(T0, .18)); P(14, 18, 2, 5, trim); P(15, 19, 1, 3, trimH); }
 
-    // front arm + pauldrons
-    P(12, 8, 1, 4, arm); P(13, 8, 1, 4, OL); P(12, 12, 1, 1, skin);
-    if (o.pauldrons) { P(2, 6, 3, 2, lighten(arm, .2)); P(2, 6, 1, 2, OL); P(2, 8, 3, 1, OL); P(11, 6, 3, 2, lighten(arm, .2)); P(13, 6, 1, 2, OL); P(11, 8, 3, 1, OL); }
+    // ===== front arm + pauldrons =====
+    P(23, 16, 3, 10, arm); P(25, 16, 1, 10, armS); P(26, 16, 1, 10, OL); P(23, 26, 3, 2, skin); P(23, 26, 3, 1, skinH); P(23, 27, 3, 1, skinS);
+    if (o.pauldrons) {
+      P(4, 13, 6, 5, lighten(A0, .2)); P(4, 13, 6, 1, lighten(A0, .42)); P(4, 13, 1, 5, OL); P(4, 12, 6, 1, OL); P(4, 18, 6, 1, OL); P(9, 14, 1, 3, armD);
+      P(22, 13, 6, 5, lighten(A0, .2)); P(22, 13, 6, 1, lighten(A0, .42)); P(27, 13, 1, 5, OL); P(22, 12, 6, 1, OL); P(22, 18, 6, 1, OL); P(22, 14, 1, 3, armD);
+    }
 
-    // ===== head =====
-    P(5, 1, 6, 6, skin); P(4, 2, 1, 4, skinS); P(11, 2, 1, 4, skinS);
-    P(5, 0, 6, 1, OL); P(4, 1, 1, 1, OL); P(11, 1, 1, 1, OL); P(4, 6, 1, 1, OL); P(11, 6, 1, 1, OL);
+    // ===== head (cols 9-22) =====
+    P(10, 2, 12, 12, skin); P(9, 3, 1, 10, skin); P(22, 3, 1, 10, skin);
+    P(10, 2, 2, 11, skinH); P(20, 3, 2, 10, skinS);                      // light / shade sides
+    P(10, 1, 12, 1, OL); P(9, 2, 1, 1, OL); P(22, 2, 1, 1, OL); P(8, 3, 1, 10, OL); P(23, 3, 1, 10, OL); P(9, 13, 1, 1, OL); P(22, 13, 1, 1, OL); P(10, 14, 12, 1, OL);
     var ht = o.headType || "hair";
     if (ht === "helm") {
-      P(4, 1, 8, 4, arm); P(4, 1, 1, 4, armH); P(11, 1, 1, 4, armS); P(4, 0, 8, 1, OL); P(3, 1, 1, 4, OL); P(12, 1, 1, 4, OL);
-      P(5, 5, 6, 1, armS); P(5, 4, 6, 1, "#050505"); glow(6, 4, 1, 1, o.eye || "#e0402a"); glow(9, 4, 1, 1, o.eye || "#e0402a");
-      if (o.crest !== false) { P(7, -1, 2, 2, trim); }
+      P(9, 1, 14, 8, arm); P(9, 1, 2, 8, armH); P(21, 1, 2, 8, armS); P(9, 0, 14, 1, OL); P(8, 1, 1, 9, OL); P(23, 1, 1, 9, OL);
+      P(9, 8, 14, 1, armD); P(10, 9, 12, 2, "#050505"); P(10, 9, 12, 1, armD);   // brow + visor slit
+      glow(12, 9, 3, 2, o.eye || "#e0402a"); glow(18, 9, 3, 2, o.eye || "#e0402a");
+      P(9, 11, 14, 3, armS); P(9, 11, 2, 3, arm); P(9, 14, 14, 1, OL); P(15, 9, 2, 5, armD); // cheeks + nasal
+      P(10, 2, 1, 1, armD); P(21, 2, 1, 1, armD);
+      if (o.crest !== false) { P(14, -4, 4, 5, trim); P(14, -4, 2, 5, trimH); P(15, -5, 2, 1, trimS); }
     } else if (ht === "hood") {
       var hd = fc(o.headCol || "#3a3550");
-      P(4, 0, 8, 6, hd); P(5, -1, 6, 1, darken(hd, .2)); P(4, 0, 1, 6, lighten(hd, .12)); P(11, 0, 1, 6, darken(hd, .42));
-      P(3, 1, 1, 5, OL); P(12, 1, 1, 5, OL); P(4, -1, 8, 1, OL);
-      P(5, 3, 6, 3, "#0b0a12"); glow(6, 4, 1, 1, o.eye || "#c9e37a"); glow(9, 4, 1, 1, o.eye || "#c9e37a");
-      P(4, 6, 8, 1, darken(hd, .3));
+      P(8, 0, 16, 12, hd); P(8, 0, 2, 12, lighten(o.headCol || "#3a3550", .14)); P(22, 0, 2, 12, darken(o.headCol || "#3a3550", .42));
+      P(8, -1, 16, 1, OL); P(7, 0, 1, 12, OL); P(24, 0, 1, 12, OL); P(10, 1, 12, 1, darken(hd, .22));
+      P(11, 3, 1, 8, darken(hd, .28)); P(20, 3, 1, 8, darken(hd, .4));
+      P(11, 5, 10, 7, "#0b0a12");                                        // face void
+      glow(12, 7, 2, 3, o.eye || "#c9e37a"); glow(18, 7, 2, 3, o.eye || "#c9e37a");
+      P(9, 11, 14, 2, darken(hd, .32));
     } else if (ht === "skull") {
-      P(5, 3, 2, 2, "#161210"); P(9, 3, 2, 2, "#161210"); glow(6, 4, 1, 1, o.eye || "#b9d24a"); glow(9, 4, 1, 1, o.eye || "#b9d24a");
-      P(6, 6, 4, 1, "#161210"); P(7, 6, 1, 1, skin); P(9, 6, 1, 1, skin);
-      if (o.hood) { var hh = fc(o.headCol || "#3a3a2a"); P(4, 0, 8, 2, hh); P(3, 1, 1, 4, hh); P(12, 1, 1, 4, hh); P(4, -1, 8, 1, OL); }
+      P(11, 6, 4, 3, "#161210"); P(17, 6, 4, 3, "#161210"); glow(12, 7, 2, 2, o.eye || "#b9d24a"); glow(18, 7, 2, 2, o.eye || "#b9d24a");
+      P(15, 9, 2, 2, "#161210"); P(11, 12, 10, 1, "#161210");
+      P(12, 12, 1, 2, skin); P(14, 12, 1, 2, skin); P(16, 12, 1, 2, skin); P(18, 12, 1, 2, skin); P(20, 12, 1, 2, skin);
+      if (o.hood) { var hh = fc(o.headCol || "#3a3a2a"); P(8, 0, 16, 3, hh); P(8, 0, 2, 8, hh); P(22, 0, 2, 8, hh); P(8, -1, 16, 1, OL); }
     } else {
-      P(6, 3, 1, 2, "#f4efe4"); P(9, 3, 1, 2, "#f4efe4"); P(6, 4, 1, 1, o.eye || "#4a3fa0"); P(9, 4, 1, 1, o.eye || "#4a3fa0"); P(7, 6, 2, 1, skinS);
-      P(4, 0, 8, 2, hair); P(4, 0, 1, 3, hair); P(11, 0, 1, 3, hair); P(5, 2, 2, 1, hair); P(9, 2, 2, 1, hair); P(4, -1, 8, 1, OL);
-      if (o.longHair) { P(2, 2, 2, 8, hair); P(2, 2, 1, 8, darken(hair, .3)); P(12, 2, 2, 7, hair); P(13, 2, 1, 7, darken(hair, .3)); }
+      P(11, 6, 3, 3, "#f4efe4"); P(18, 6, 3, 3, "#f4efe4");             // eye whites
+      P(12, 7, 2, 2, o.eye || "#4a3fa0"); P(19, 7, 2, 2, o.eye || "#4a3fa0"); P(12, 7, 1, 1, "#fff"); P(19, 7, 1, 1, "#fff");
+      P(11, 5, 3, 1, skinD); P(18, 5, 3, 1, skinD);                     // brows
+      P(15, 10, 2, 1, skinS); P(13, 12, 6, 1, skinS); P(14, 12, 4, 1, darken(sk0, .42)); // nose + mouth
+      P(9, 0, 14, 3, hair); P(9, 0, 14, 1, hairH); P(9, 1, 2, 6, hair); P(21, 1, 2, 6, hair);
+      P(11, 3, 4, 1, hair); P(17, 3, 4, 1, hair); P(12, 0, 1, 3, hairH); P(19, 0, 1, 3, hairH); P(9, -1, 14, 1, OL);
+      if (o.longHair) { P(6, 3, 3, 15, hair); P(6, 3, 1, 15, hairH); P(8, 4, 1, 13, hairS); P(23, 3, 3, 13, hair); P(25, 3, 1, 13, hairS); P(7, 17, 2, 3, hair); }
     }
-    if (o.horns) { P(3, -1, 2, 2, "#20160f"); P(3, -2, 1, 1, "#20160f"); P(11, -1, 2, 2, "#20160f"); P(12, -2, 1, 1, "#20160f"); }
+    if (o.horns) { P(6, -2, 3, 4, "#22170f"); P(5, -5, 2, 4, "#22170f"); P(4, -7, 2, 2, "#22170f"); P(23, -2, 3, 4, "#22170f"); P(25, -5, 2, 4, "#22170f"); P(26, -7, 2, 2, "#22170f"); }
 
     // ===== weapon (front hand) =====
     if (o.weapon && o.weapon.type && o.weapon.type !== "none") pxWeapon(P, glow, o.weapon, trim);
   }
 
   function pxWeapon(P, glow, w, trim) {
-    var c = w.col || "#c3c8cf", cl = lighten(c, .5), cs = darken(c, .5), wood = "#5a4326";
+    var c = w.col || "#c3c8cf", cl = lighten(c, .55), cs = darken(c, .45), cd = darken(c, .65);
+    var wood = "#5a4326", woodH = "#7c5e38", woodD = "#372716", trimH = lighten(trim, .35);
     if (w.type === "greatsword") {
-      P(12, -2, 3, 12, c); P(12, -2, 1, 12, cl); P(14, -1, 1, 11, cs); P(13, -3, 1, 1, "#fff"); P(12, -3, 3, 1, OL);
-      P(11, 10, 5, 1, trim); P(13, 11, 1, 3, wood); P(13, 14, 1, 1, trim);
+      P(24, -5, 4, 23, c); P(24, -5, 1, 23, cl); P(27, -4, 1, 22, cs); P(25, -6, 2, 1, "#fff"); P(24, -6, 4, 1, OL); P(25, -4, 1, 21, lighten(c, .3)); // blade + fuller
+      P(21, 18, 10, 2, trim); P(21, 18, 10, 1, trimH); P(20, 18, 1, 2, trimH); P(31, 18, 1, 2, trimH);   // crossguard
+      P(24, 20, 4, 5, wood); P(24, 20, 1, 5, woodH); P(27, 20, 1, 5, woodD); P(23, 25, 6, 2, trim); P(24, 25, 4, 1, trimH); // grip + pommel
     } else if (w.type === "sword") {
-      P(13, 1, 1, 8, c); P(13, 1, 1, 8, cl); P(14, 2, 1, 6, cs); P(13, 0, 1, 1, "#fff"); P(12, 9, 3, 1, trim); P(13, 10, 1, 3, wood); P(13, 13, 1, 1, trim);
+      P(24, 2, 3, 16, c); P(24, 2, 1, 16, cl); P(26, 3, 1, 14, cs); P(24, 1, 3, 1, "#fff"); P(25, 2, 1, 15, lighten(c, .28));
+      P(22, 18, 7, 2, trim); P(22, 18, 7, 1, trimH); P(24, 20, 3, 5, wood); P(24, 20, 1, 5, woodH); P(23, 25, 5, 2, trim);
     } else if (w.type === "dagger") {
-      P(13, 5, 1, 5, c); P(14, 6, 1, 3, cs); P(12, 10, 3, 1, trim); P(13, 11, 1, 2, wood);
+      P(24, 9, 3, 10, c); P(24, 9, 1, 10, cl); P(26, 10, 1, 8, cs); P(24, 8, 3, 1, "#fff"); P(22, 19, 7, 1, trim); P(24, 20, 3, 4, wood); P(23, 24, 5, 1, trim);
     } else if (w.type === "bow") {
-      P(14, 1, 1, 2, wood); P(13, 3, 1, 2, wood); P(12, 5, 1, 3, wood); P(13, 8, 1, 2, wood); P(14, 10, 1, 2, wood);
-      P(11, 8, 4, 1, wood); P(10, 8, 1, 1, cl);              // nocked arrow
+      P(28, 0, 2, 4, wood); P(26, 3, 2, 4, wood); P(24, 7, 2, 6, wood); P(26, 12, 2, 4, wood); P(28, 15, 2, 4, wood);
+      P(28, 0, 1, 4, woodH); P(24, 7, 1, 6, woodH); P(24, 7, 2, 1, trim); P(24, 12, 2, 1, trim);         // grip binding
+      P(30, 1, 1, 17, "#e6ddc4");                                                                          // string
+      P(17, 9, 11, 1, wood); P(15, 9, 2, 1, cl); P(15, 8, 1, 3, cl); P(28, 8, 1, 1, cs); P(28, 10, 1, 1, cs); // nocked arrow + fletch
     } else if (w.type === "staff") {
-      P(13, 2, 1, 11, wood); P(13, 13, 1, 1, darken(wood, .3));
-      var g = w.col || "#8fd0ff"; glow(12, -1, 3, 3, g); P(13, 0, 1, 1, "#fff"); P(12, -1, 1, 1, lighten(g, .4));
+      P(24, 4, 3, 22, wood); P(24, 4, 1, 22, woodH); P(26, 4, 1, 22, woodD); P(23, 25, 5, 2, trim);        // shaft + ferrule
+      var g = w.col || "#8fd0ff", gl = lighten(g, .5);
+      P(22, -2, 7, 3, trim); P(23, -4, 5, 2, trim); P(22, 0, 1, 3, trimH); P(28, 0, 1, 3, trimH);          // claw setting
+      glow(23, -5, 5, 7, g); P(24, -4, 3, 5, gl); P(25, -3, 1, 1, "#fff"); P(24, -1, 3, 1, darken(g, .2)); // gem
     } else if (w.type === "club") {
-      P(12, 3, 4, 7, wood); P(12, 3, 1, 7, lighten(wood, .22)); P(15, 3, 1, 7, darken(wood, .35)); P(12, 2, 4, 1, OL);
-      P(11, 5, 1, 1, "#2a1c10"); P(15, 7, 1, 1, "#2a1c10"); P(13, 10, 1, 2, wood);
+      P(23, 3, 8, 15, wood); P(23, 3, 2, 15, woodH); P(29, 3, 2, 15, woodD); P(23, 2, 8, 1, OL); P(23, 18, 8, 1, OL);
+      P(22, 6, 1, 2, woodD); P(31, 9, 1, 2, woodD); P(22, 13, 1, 2, woodD);                                // knots
+      P(25, 3, 1, 1, "#2a1c10"); P(28, 6, 1, 1, "#2a1c10"); P(26, 11, 1, 1, "#2a1c10");                    // studs
+      P(25, 18, 3, 8, wood); P(25, 18, 1, 8, woodH); P(24, 25, 5, 1, "#2a1c10");                            // handle
     } else if (w.type === "twin") {
-      P(13, 2, 1, 7, c); P(14, 3, 1, 5, cs); P(11, 4, 1, 6, c); P(10, 5, 1, 4, cs);
+      P(24, 2, 2, 14, c); P(24, 2, 1, 14, cl); P(25, 3, 1, 12, cs); P(24, 1, 2, 1, "#fff"); P(23, 16, 4, 1, trim); P(24, 17, 2, 4, wood);  // main
+      P(20, 5, 2, 12, c); P(20, 5, 1, 12, cl); P(21, 6, 1, 10, cs); P(19, 17, 4, 1, trim); P(20, 18, 2, 3, wood);                          // off-hand
     }
   }
   G.pxHumanoid = pxHumanoid;

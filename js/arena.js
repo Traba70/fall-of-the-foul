@@ -637,22 +637,31 @@
   function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
   function drawPlayer(p) { if (p.iframe > 0) ctx.globalAlpha = 0.55 + 0.45 * Math.sin(A.time * 40); G.drawHeroTop(ctx, p); ctx.globalAlpha = 1; }
   function drawGate(g) {
-    var t = A.time, x = g.x, y = g.y, ps = g.r / 7;
-    var gr = ctx.createRadialGradient(x, y, 4, x, y, g.r * 2); gr.addColorStop(0, "rgba(140,210,255,.45)"); gr.addColorStop(.5, "rgba(120,180,255,.14)"); gr.addColorStop(1, "rgba(140,210,255,0)");
-    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, g.r * 2, 0, TAU); ctx.fill();
+    var t = A.time, x = g.x, y = g.y, ps = g.r / 14;                    // 2x resolution
+    var gr = ctx.createRadialGradient(x, y - 2 * ps, 6, x, y - 2 * ps, g.r * 2.1);
+    gr.addColorStop(0, "rgba(140,210,255,.42)"); gr.addColorStop(.5, "rgba(120,180,255,.12)"); gr.addColorStop(1, "rgba(140,210,255,0)");
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y - 2 * ps, g.r * 2.1, 0, TAU); ctx.fill();
     function B(gx, gy, w, h, col) { ctx.fillStyle = col; ctx.fillRect(Math.round(x + gx * ps), Math.round(y + gy * ps), Math.ceil(w * ps), Math.ceil(h * ps)); }
-    var stone = "#3a3630", stoneH = "#585249", stoneS = "#221f19", ol = "#0e0c09";
-    // portal energy behind the arch (animated)
-    for (var i = 0; i < 5; i++) { var a = 0.55 - i * 0.1; ctx.fillStyle = "rgba(120," + (205 - i * 12) + ",255," + a + ")"; ctx.beginPath(); ctx.ellipse(x, y - ps, (5 - i * 0.6) * ps, (6.5 - i * 0.7) * ps, 0, 0, TAU); ctx.fill(); }
-    for (i = 0; i < 6; i++) { var aa = t * 1.5 + i * 1.05; ctx.fillStyle = "rgba(210,240,255,.85)"; ctx.beginPath(); ctx.arc(x + Math.cos(aa) * 3.4 * ps, y - ps + Math.sin(aa) * 4.6 * ps, ps * 0.5, 0, TAU); ctx.fill(); }
-    // stone arch (pixel blocks)
-    B(-8, -9, 1, 16, ol); B(7, -9, 1, 16, ol); B(-7, -10, 14, 1, ol);
-    B(-7, -8, 2, 15, stone); B(-7, -8, 1, 15, stoneH); B(-6, -8, 1, 15, stoneS);
-    B(5, -8, 2, 15, stone); B(5, -8, 1, 15, stoneH); B(6, -8, 1, 15, stoneS);
-    B(-6, -9, 12, 2, stone); B(-6, -9, 12, 1, stoneH); B(-6, -7, 12, 1, stoneS);
-    B(-6, 6, 12, 1, ol);
-    // rune keystone
-    B(-1, -9, 2, 1, "#e9d29a"); B(0, -8, 1, 1, "#9fe0ff");
+    function rune(gx, gy, w, h) { ctx.save(); ctx.shadowColor = "#9fe0ff"; ctx.shadowBlur = 6 * ps; B(gx, gy, w, h, "#cfeeff"); ctx.restore(); }
+    var stone = "#3a3630", stoneH = "#5e574c", stoneS = "#211e18", mortar = "#17140f", ol = "#0d0b08";
+    // portal energy (layered, animated), framed by the arch drawn over it
+    for (var i = 0; i < 7; i++) { var a = 0.5 - i * 0.06, pul = 0.9 + 0.1 * Math.sin(t * 3 + i); ctx.fillStyle = "rgba(110," + (200 - i * 10) + ",255," + a + ")"; ctx.beginPath(); ctx.ellipse(x, y - 2 * ps, (9 - i) * ps * pul, (12 - i * 1.1) * ps * pul, 0, 0, TAU); ctx.fill(); }
+    ctx.fillStyle = "rgba(232,248,255,.9)"; ctx.beginPath(); ctx.ellipse(x, y - 2 * ps, 2 * ps, 2.6 * ps, 0, 0, TAU); ctx.fill();
+    for (i = 0; i < 9; i++) { var aa = t * 1.6 + i * 0.7, rr = 1.5 + (i % 3); ctx.fillStyle = "rgba(210,240,255,.85)"; ctx.beginPath(); ctx.arc(x + Math.cos(aa) * rr * 2.2 * ps, y - 2 * ps + Math.sin(aa) * rr * 2.6 * ps, ps * 0.5, 0, TAU); ctx.fill(); }
+    // ---- stone arch (pixel) ----
+    function pillar(c0) {
+      B(c0 - 1, -14, 1, 29, ol); B(c0 + 4, -14, 1, 29, ol);
+      B(c0, -14, 4, 28, stone); B(c0, -14, 1, 28, stoneH); B(c0 + 3, -14, 1, 28, stoneS);
+      for (var by = -14; by < 14; by += 4) B(c0, by, 4, 1, mortar);
+    }
+    pillar(-14); pillar(10);
+    B(-11, -18, 22, 4, stone); B(-11, -18, 22, 1, stoneH); B(-11, -14, 22, 1, stoneS);   // arch lintel
+    B(-12, -18, 1, 4, ol); B(11, -18, 1, 4, ol); B(-11, -19, 22, 1, ol);
+    for (var vx = -8; vx <= 8; vx += 4) B(vx, -18, 1, 4, mortar);                         // voussoir seams
+    B(-2, -21, 4, 7, stone); B(-2, -21, 4, 1, stoneH); B(-2, -21, 1, 7, ol); B(2, -21, 1, 7, ol); B(-2, -22, 4, 1, ol); // keystone
+    rune(-1, -19, 2, 3);
+    B(-16, 13, 9, 2, stoneS); B(7, 13, 9, 2, stoneS); B(-16, 15, 9, 1, ol); B(7, 15, 9, 1, ol);  // base slabs
+    ctx.strokeStyle = "rgba(0,0,0,.4)"; ctx.lineWidth = Math.max(1, ps * 0.6); ctx.beginPath(); ctx.moveTo(x - 12 * ps, y - 8 * ps); ctx.lineTo(x - 11 * ps, y - 1 * ps); ctx.lineTo(x - 12.5 * ps, y + 5 * ps); ctx.stroke();
   }
   function drawHazards() {
     for (var i = 0; i < A.hazards.length; i++) { var h = A.hazards[i];
